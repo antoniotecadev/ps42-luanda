@@ -1,0 +1,20 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+// Configuração do Prisma ORM para o projeto Next.js
+// Define o cliente Prisma e a conexão com o banco de dados PostgreSQL
+
+// (O Gerador de Código)
+generator client {
+  provider = "prisma-client" // Especifica o gerador de código para o cliente Prisma
+  output   = "../lib/generated/prisma" // Define o diretório de saída para o código gerado do cliente Prisma
+}
+
+// (A Fonte de Dados)
+datasource db {
+  provider = "postgresql" // Especifica o provedor de banco de dados como PostgreSQL
+  url      = env("DATABASE_URL") // Define a URL de conexão com o banco de dados, utilizando uma variável de ambiente para segurança
+}
