@@ -93,6 +93,8 @@ enum AchievementRarity {
 
 // ─── MODELS ──────────────────────────────────────
 
+// Usuários do sistema, incluindo cadetes, staff e administradores, com informações de perfil, 
+// status de elegibilidade e bloqueio, e relações com sessões, resultados, torneios, sanções disciplinares, relatórios e notificações
 model User {
   id              String    @id @default(cuid())
   intraId         Int       @unique // ID único na 42 Intra
