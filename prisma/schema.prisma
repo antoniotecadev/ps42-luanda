@@ -9,12 +9,13 @@
 
 // (O Gerador de Código)
 generator client {
-  provider = "prisma-client" // Especifica o gerador de código para o cliente Prisma
+  provider = "prisma-client-js" // Especifica o gerador de código para o cliente Prisma
   output   = "../lib/generated/prisma" // Define o diretório de saída para o código gerado do cliente Prisma
 }
 
 // (A Fonte de Dados)
 datasource db {
   provider = "postgresql" // Especifica o provedor de banco de dados como PostgreSQL
-  url      = env("DATABASE_URL") // Define a URL de conexão com o banco de dados, utilizando uma variável de ambiente para segurança
+  url      = env("DATABASE_URL") // Define a URL de conexão com o banco de dados
+  directUrl = env("DIRECT_URL") // Define a URL de conexão direta
 }
