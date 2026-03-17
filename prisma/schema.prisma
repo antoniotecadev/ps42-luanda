@@ -9,7 +9,7 @@
 
 // (O Gerador de Código)
 generator client {
-  provider = "prisma-client-js" // Especifica o gerador de código para o cliente Prisma
+  provider = "prisma-client" // Especifica o gerador de código para o cliente Prisma
   output   = "../lib/generated/prisma" // Define o diretório de saída para o código gerado do cliente Prisma
 }
 
