@@ -15,7 +15,358 @@ generator client {
 
 // (A Fonte de Dados)
 datasource db {
-  provider = "postgresql" // Especifica o provedor de banco de dados como PostgreSQL
-  url      = env("DATABASE_URL") // Define a URL de conexão com o banco de dados
+  provider  = "postgresql" // Especifica o provedor de banco de dados como PostgreSQL
+  url       = env("DATABASE_URL") // Define a URL de conexão com o banco de dados
   directUrl = env("DIRECT_URL") // Define a URL de conexão direta
+}
+
+// PS42 Luanda — Prisma Schema
+// Gerado com base no regulamento (10 artigos) + Blueprint v1.0
+
+// ─── ENUMS ───────────────────────────────────────
+
+enum Role {
+  CADETE
+  STAFF
+  ADMIN
+}
+
+enum SessionStatus {
+  PENDING // Pedido submetido, aguarda aprovação
+  APPROVED // Aprovado, aguarda levantamento
+  ACTIVE // Sessão a decorrer
+  DONE // Concluída normalmente
+  CANCELLED // Cancelada pelo cadete ou staff
+  REJECTED // Rejeitada pelo staff
+}
+
+enum DisciplinaryType {
+  WARNING // Admoestação verbal/escrita (Art. 9b)
+  SUSPENSION // Suspensão temporária (Art. 9a)
+  FINE // Indemnização por danos (Art. 9c)
+  EXPULSION // Expulsão do currículo
+}
+
+enum ReportCategory {
+  CONDUCT // Comportamento inadequado (Art. 6)
+  DAMAGE // Danos ao equipamento (Art. 7)
+  RULES // Violação de regras gerais
+  CONTENT // Conteúdo inapropriado (Art. 6)
+  OTHER
+}
+
+enum ReportStatus {
+  OPEN 
+  REVIEWING
+  RESOLVED
+  DISMISSED
+}
+
+enum IncidentType {
+  DAMAGE // Danos acidentais durante a sessão
+  THEFT // Furto de equipamento
+  MISUSE // Uso inadequado do espaço ou equipamentos
+  TECHNICAL // Incidente técnico (ex: falha de hardware)
+}
+
+enum MatchType {
+  CASUAL // Partida casual, sem impacto no ranking
+  TOURNAMENT // Partida válida para torneios e ranking oficial
+  RANKED // Partida ranqueada, impacta ranking e conquistas
+}
+
+enum TournamentStatus {
+  DRAFT // Criado, mas não publicado
+  OPEN // Aberto para inscrições
+  RUNNING // Em andamento
+  DONE // Concluído, vencedor declarado
+  CANCELLED // Cancelado pelo criador ou staff
+}
+
+enum AchievementRarity {
+  COMMON // Conquistas fáceis de obter, como "Primeira Sessão"
+  UNCOMMON // Conquistas de dificuldade moderada, como "Venceu 10 Sessões"
+  RARE // Conquistas difíceis, como "Venceu um Torneio"
+  EPIC // Conquistas muito difíceis, como "Top 10 no Ranking"
+  LEGENDARY // Conquistas lendárias, como "Venceu 100 Sessões sem perder"
+}
+
+// ─── MODELS ──────────────────────────────────────
+
+model User {
+  id              String    @id @default(cuid())
+  intraId         Int       @unique // ID único na 42 Intra
+  login           String    @unique // Login 42 (ex: aferreir)
+  displayName     String
+  email           String    @unique
+  avatarUrl       String?
+  role            Role      @default(CADETE)
+  coalitionName   String? // Da API 42 Intra
+  coalitionColor  String?
+  intraLevel      Float     @default(0)
+  isEligible      Boolean   @default(false) // Calculado pelo motor Art. 3
+  isBlocked       Boolean   @default(false) // Bloqueio manual staff
+  eligibilityNote String? // Motivo se não elegível
+  lastSyncAt      DateTime? // Última sync com API 42
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relações
+  sessions             Session[]
+  gameResults          GameResult[]
+  wonTournaments       Tournament[]         @relation("TournamentWinner")
+  createdTournaments   Tournament[]         @relation("TournamentCreator")
+  userAchievements     UserAchievement[]
+  reportsSubmitted     Report[]             @relation("ReportReporter")
+  reportsReceived      Report[]             @relation("ReportSubject")
+  disciplinaryRecords  DisciplinaryRecord[] @relation("DisciplinarySubject")
+  disciplinaryIssued   DisciplinaryRecord[] @relation("DisciplinaryIssuer")
+  incidentsResponsible Incident[]           @relation("IncidentResponsible")
+  incidentsReported    Incident[]           @relation("IncidentReporter")
+  suggestedGames       Game[]               @relation("GameSuggester")
+  approvedGames        Game[]               @relation("GameApprover")
+  notifications        Notification[]
+  auditLogs            AuditLog[]
+
+  @@index([intraId])
+  @@index([login])
+  @@map("users")
+}
+
+// Sessões de jogo agendadas e realizadas pelos cadetes
+model Session {
+  id          String        @id @default(cuid())
+  userId      String
+  gameId      String?
+  status      SessionStatus @default(PENDING)
+  requestedAt DateTime      @default(now())
+  startedAt   DateTime?
+  endedAt     DateTime?
+  durationMin Int? // Máx 60 min (Art. 4f)
+  extended    Boolean       @default(false) // Extensão por fila vazia
+  endedBy     String? // "timer"|"staff"|"cadete"
+  staffNote   String?
+  queuePos    Int? // Posição na fila
+
+  user        User         @relation(fields: [userId], references: [id])
+  game        Game?        @relation(fields: [gameId], references: [id])
+  gameResults GameResult[]
+  incident    Incident?
+
+  @@index([userId])
+  @@index([status])
+  @@map("sessions")
+}
+
+// Jogos disponíveis para agendamento, sugeridos pelos cadetes e aprovados pelo staff
+model Game {
+  id            String   @id @default(cuid())
+  title         String
+  coverUrl      String?
+  category      String?
+  maxPlayers    Int      @default(2)
+  isApproved    Boolean  @default(false) // Aprovação staff (Art. 6)
+  approvedById  String?
+  format        String? // "physical"|"digital"
+  pegiRating    Int?
+  description   String?
+  suggestedById String?
+  createdAt     DateTime @default(now())
+
+  approvedBy  User?        @relation("GameApprover", fields: [approvedById], references: [id])
+  suggestedBy User?        @relation("GameSuggester", fields: [suggestedById], references: [id])
+  sessions    Session[]
+  gameResults GameResult[]
+  tournaments Tournament[]
+
+  @@map("games")
+}
+
+// Resultados das sessões de jogo, incluindo vencedores, participantes e dados de pontuação flexíveis
+model GameResult {
+  id           String    @id @default(cuid())
+  sessionId    String
+  gameId       String
+  winnerId     String?
+  participants String[] // Array de user IDs
+  scoreData    Json? // Dados flexíveis do score
+  matchType    MatchType @default(CASUAL)
+  verified     Boolean   @default(false)
+  tournamentId String?
+  createdAt    DateTime  @default(now())
+
+  session    Session     @relation(fields: [sessionId], references: [id])
+  game       Game        @relation(fields: [gameId], references: [id])
+  winner     User?       @relation(fields: [winnerId], references: [id])
+  tournament Tournament? @relation(fields: [tournamentId], references: [id])
+
+  @@map("game_results")
+}
+
+// Torneios organizados pelos cadetes, com estrutura de chaves flexível para dados de bracket e resultados
+model Tournament {
+  id              String           @id @default(cuid())
+  name            String
+  gameId          String
+  createdById     String
+  status          TournamentStatus @default(DRAFT)
+  maxParticipants Int              @default(8)
+  bracketData     Json?
+  winnerId        String?
+  startsAt        DateTime?
+  endsAt          DateTime?
+  createdAt       DateTime         @default(now())
+
+  game        Game         @relation(fields: [gameId], references: [id])
+  createdBy   User         @relation("TournamentCreator", fields: [createdById], references: [id])
+  winner      User?        @relation("TournamentWinner", fields: [winnerId], references: [id])
+  gameResults GameResult[]
+
+  @@map("tournaments")
+}
+
+// Registros disciplinares aplicados aos cadetes, com tipos e motivos flexíveis, e relação com o staff que emitiu a sanção
+model DisciplinaryRecord {
+  id              String           @id @default(cuid())
+  userId          String
+  type            DisciplinaryType
+  reason          String
+  articleViolated String? // Ex: "Art. 6c", "Art. 4d"
+  issuedById      String
+  validUntil      DateTime?
+  isActive        Boolean          @default(true)
+  councilApproved Boolean          @default(false) // Conselho Pedagógico (Art. 9)
+  notes           String?
+  createdAt       DateTime         @default(now())
+
+  user     User @relation("DisciplinarySubject", fields: [userId], references: [id])
+  issuedBy User @relation("DisciplinaryIssuer", fields: [issuedById], references: [id])
+
+  @@index([userId, isActive])
+  @@map("disciplinary_records")
+}
+
+// Relatórios de incidentes envolvendo cadetes, para monitoramento e ações disciplinares, com categorias e status flexíveis, e possibilidade de anonimato para o denunciante
+model Report {
+  id             String         @id @default(cuid())
+  reporterId     String? // null = anónimo (Art. 8)
+  reportedUserId String?
+  category       ReportCategory
+  description    String
+  evidenceUrls   String[]
+  status         ReportStatus   @default(OPEN)
+  resolvedById   String?
+  resolutionNote String?
+  isAnonymous    Boolean        @default(false)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  reporter     User? @relation("ReportReporter", fields: [reporterId], references: [id])
+  reportedUser User? @relation("ReportSubject", fields: [reportedUserId], references: [id])
+
+  @@map("reports")
+}
+
+// Incidentes relacionados a sessões de jogo, como danos acidentais, furtos ou uso inadequado, para monitoramento e ações corretivas, 
+// com tipos e status flexíveis, e relação com os responsáveis e denunciantes
+model Incident {
+  id            String       @id @default(cuid())
+  sessionId     String?      @unique
+  responsibleId String?
+  reportedById  String?
+  type          IncidentType
+  description   String
+  photoUrls     String[]
+  repairCost    Decimal?
+  status        String       @default("open") // open|in_progress|resolved
+  resolvedAt    DateTime?
+  createdAt     DateTime     @default(now())
+
+  session     Session? @relation(fields: [sessionId], references: [id])
+  responsible User?    @relation("IncidentResponsible", fields: [responsibleId], references: [id])
+  reportedBy  User?    @relation("IncidentReporter", fields: [reportedById], references: [id])
+
+  @@map("incidents")
+}
+
+// Conquistas que os cadetes podem desbloquear com base em suas actividades, como número de sessões, horas jogadas, vitórias em torneios, etc., 
+// com categorias e condições flexíveis, e raridade para incentivar a participação
+model Achievement {
+  id             String            @id @default(cuid())
+  slug           String            @unique
+  name           String
+  description    String
+  icon           String
+  category       String // gaming|social|academic|special
+  conditionType  String // sessions_count|hours_played|etc
+  conditionValue Int
+  rarity         AchievementRarity @default(COMMON)
+
+  userAchievements UserAchievement[]
+
+  @@map("achievements")
+}
+
+// Relação entre usuários e conquistas desbloqueadas, com data de desbloqueio para histórico e exibição no perfil do cadete
+model UserAchievement {
+  id            String   @id @default(cuid())
+  userId        String
+  achievementId String
+  unlockedAt    DateTime @default(now())
+
+  user        User        @relation(fields: [userId], references: [id])
+  achievement Achievement @relation(fields: [achievementId], references: [id])
+
+  @@unique([userId, achievementId])
+  @@map("user_achievements")
+}
+
+// Notificações para os cadetes, para informar sobre aprovações de sessões, sanções disciplinares, novos jogos disponíveis, etc., 
+// com tipos e status flexíveis, e relação com o usuário destinatário
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String // queue|session|discipline|achievement
+  title     String
+  body      String
+  actionUrl String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+// Logs de auditoria para ações críticas no sistema, como aprovações de sessões, bloqueios de usuários, alterações de configurações, etc., 
+//com detalhes sobre o ator, ação, entidade afetada e dados antes/depois para rastreabilidade e segurança
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  action     String // Ex: SESSION_APPROVED, USER_BLOCKED
+  entityType String // Ex: Session, User, Report
+  entityId   String?
+  beforeData Json?
+  afterData  Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  actor User? @relation(fields: [actorId], references: [id])
+
+  @@index([entityType, entityId])
+  @@map("audit_logs")
+}
+
+// Configurações do sistema, para armazenar chaves e valores flexíveis, como status de manutenção, mensagens globais, limites de sessões, etc., 
+// com relação opcional ao usuário que fez a última atualização para rastreabilidade administrativa
+model SystemConfig {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       Json
+  description String?
+  updatedById String?
+  updatedAt   DateTime @updatedAt
+
+  @@map("system_config")
 }
