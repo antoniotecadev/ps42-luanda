@@ -1,0 +1,2373 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PS42 Luanda — Fase 1: Setup</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Cabinet+Grotesk:wght@400;500;700;800;900&family=Instrument+Sans:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #080c10;
+    --surface: #0e1318;
+    --surface2: #141a21;
+    --surface3: #1c242d;
+    --border: #1e2832;
+    --border2: #253040;
+    --white: #e8edf2;
+    --muted: #4a5a6a;
+    --secondary: #7a8fa0;
+    --teal: #00d4aa;
+    --teal-dim: rgba(0,212,170,0.08);
+    --teal-border: rgba(0,212,170,0.2);
+    --blue: #3b9eff;
+    --blue-dim: rgba(59,158,255,0.08);
+    --orange: #ff8c42;
+    --orange-dim: rgba(255,140,66,0.08);
+    --red: #ff4757;
+    --red-dim: rgba(255,71,87,0.08);
+    --green: #2ecc71;
+    --green-dim: rgba(46,204,113,0.08);
+    --yellow: #ffd32a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--white);
+    font-family: 'Instrument Sans', sans-serif;
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  /* ─── SIDEBAR ─── */
+  .layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    min-height: 100vh;
+  }
+
+  .sidebar {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    scrollbar-width: none;
+  }
+  .sidebar::-webkit-scrollbar { display: none; }
+
+  .sidebar-logo {
+    padding: 28px 24px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .logo-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .logo-title {
+    font-family: 'Cabinet Grotesk', sans-serif;
+    font-size: 20px;
+    font-weight: 900;
+    letter-spacing: -0.5px;
+  }
+  .logo-title em { font-style: normal; color: var(--teal); }
+  .logo-phase {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--teal-dim);
+    border: 1px solid var(--teal-border);
+    color: var(--teal);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 2px;
+    margin-top: 10px;
+    letter-spacing: 1px;
+  }
+
+  .sidebar-nav { padding: 16px 12px; flex: 1; }
+  .nav-group { margin-bottom: 24px; }
+  .nav-group-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 0 12px;
+    margin-bottom: 6px;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-size: 13px;
+    color: var(--secondary);
+    border: 1px solid transparent;
+    margin-bottom: 2px;
+  }
+  .nav-item:hover { background: var(--surface2); color: var(--white); }
+  .nav-item.active {
+    background: var(--teal-dim);
+    border-color: var(--teal-border);
+    color: var(--teal);
+  }
+  .nav-item.done { color: var(--green); }
+  .nav-item.done .nav-check { color: var(--green); }
+  .nav-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    min-width: 20px;
+  }
+  .nav-item.active .nav-num { color: var(--teal); }
+  .nav-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--border2);
+    flex-shrink: 0;
+  }
+  .nav-item.active .nav-dot { background: var(--teal); }
+  .nav-item.done .nav-dot { background: var(--green); }
+
+  .sidebar-progress {
+    padding: 20px 24px;
+    border-top: 1px solid var(--border);
+  }
+  .progress-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .progress-bar {
+    height: 3px;
+    background: var(--border2);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--teal), var(--blue));
+    border-radius: 2px;
+    transition: width 0.5s ease;
+  }
+
+  /* ─── MAIN ─── */
+  .main {
+    overflow-y: auto;
+    max-height: 100vh;
+  }
+
+  /* ─── SECTIONS ─── */
+  .step-section {
+    display: none;
+    padding: 48px 56px;
+    max-width: 900px;
+  }
+  .step-section.active { display: block; }
+
+  /* ─── STEP HEADER ─── */
+  .step-header {
+    margin-bottom: 40px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--border);
+  }
+  .step-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .step-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 4px 10px;
+    border-radius: 2px;
+    letter-spacing: 1px;
+  }
+  .badge-setup { background: var(--blue-dim); border: 1px solid rgba(59,158,255,0.25); color: var(--blue); }
+  .badge-config { background: var(--orange-dim); border: 1px solid rgba(255,140,66,0.25); color: var(--orange); }
+  .badge-code { background: var(--teal-dim); border: 1px solid var(--teal-border); color: var(--teal); }
+  .badge-db { background: var(--green-dim); border: 1px solid rgba(46,204,113,0.2); color: var(--green); }
+  .badge-auth { background: rgba(255,215,42,0.08); border: 1px solid rgba(255,215,42,0.2); color: var(--yellow); }
+
+  .step-num-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+  .step-title {
+    font-family: 'Cabinet Grotesk', sans-serif;
+    font-size: 34px;
+    font-weight: 900;
+    letter-spacing: -1px;
+    line-height: 1.1;
+    margin-bottom: 12px;
+  }
+  .step-title em { font-style: normal; color: var(--teal); }
+  .step-desc {
+    font-size: 15px;
+    color: var(--secondary);
+    max-width: 620px;
+    line-height: 1.7;
+  }
+  .step-time {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 12px;
+  }
+  .step-time::before { content: '⏱'; }
+
+  /* ─── CONTENT BLOCKS ─── */
+  .block { margin-bottom: 36px; }
+  
+  .block-title {
+    font-family: 'Cabinet Grotesk', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .block-title::before {
+    content: '';
+    width: 3px;
+    height: 18px;
+    background: var(--teal);
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  /* ─── INFO BOXES ─── */
+  .info-box {
+    border-radius: 4px;
+    padding: 18px 20px;
+    margin-bottom: 16px;
+    font-size: 14px;
+    line-height: 1.7;
+    border-left: 3px solid;
+  }
+  .info-box.tip { background: var(--teal-dim); border-color: var(--teal); }
+  .info-box.warning { background: var(--orange-dim); border-color: var(--orange); }
+  .info-box.danger { background: var(--red-dim); border-color: var(--red); }
+  .info-box.info { background: var(--blue-dim); border-color: var(--blue); }
+  .info-box strong { color: var(--white); }
+  .info-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+  .info-box.tip .info-label { color: var(--teal); }
+  .info-box.warning .info-label { color: var(--orange); }
+  .info-box.danger .info-label { color: var(--red); }
+  .info-box.info .info-label { color: var(--blue); }
+
+  /* ─── COMMAND BLOCKS ─── */
+  .cmd-block {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+  .cmd-header {
+    background: var(--surface3);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+  .cmd-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .cmd-copy {
+    background: none;
+    border: 1px solid var(--border2);
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+  }
+  .cmd-copy:hover { border-color: var(--teal); color: var(--teal); }
+  .cmd-copy.copied { border-color: var(--green); color: var(--green); }
+  .cmd-body {
+    padding: 16px 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.8;
+    overflow-x: auto;
+  }
+  .cmd-body .comment { color: var(--muted); }
+  .cmd-body .cmd { color: var(--teal); }
+  .cmd-body .arg { color: var(--blue); }
+  .cmd-body .str { color: var(--orange); }
+  .cmd-body .flag { color: var(--yellow); }
+  .cmd-body .output { color: var(--secondary); }
+
+  /* ─── FILE TREE ─── */
+  .file-tree {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 20px 24px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 2;
+  }
+  .tree-dir { color: var(--blue); }
+  .tree-file { color: var(--secondary); }
+  .tree-new { color: var(--teal); }
+  .tree-important { color: var(--orange); }
+  .tree-indent { display: inline-block; }
+
+  /* ─── CODE BLOCK ─── */
+  .code-block {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+  .code-header {
+    background: var(--surface3);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+  .code-filename {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--teal);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .code-filename::before { content: '📄'; font-size: 12px; }
+  .code-lang {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+  .code-body {
+    padding: 20px 24px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.9;
+    overflow-x: auto;
+    white-space: pre;
+  }
+  .kw { color: #c792ea; }
+  .fn { color: var(--blue); }
+  .str { color: var(--orange); }
+  .comment { color: var(--muted); font-style: italic; }
+  .type { color: var(--yellow); }
+  .prop { color: #80cbc4; }
+  .val { color: var(--teal); }
+  .num { color: #f78c6c; }
+
+  /* ─── CHECKLIST ─── */
+  .checklist { list-style: none; }
+  .checklist li {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .checklist li:last-child { border-bottom: none; }
+  .check-box {
+    width: 20px;
+    height: 20px;
+    border: 1px solid var(--border2);
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-top: 1px;
+    transition: all 0.2s;
+    font-size: 12px;
+  }
+  .check-box:hover { border-color: var(--teal); }
+  .check-box.checked { background: var(--teal); border-color: var(--teal); color: var(--bg); }
+  .checklist li.done .check-text { color: var(--muted); text-decoration: line-through; }
+
+  /* ─── ENV TABLE ─── */
+  .env-table { width: 100%; border-collapse: collapse; }
+  .env-table th {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+    padding: 10px 16px;
+    text-align: left;
+    background: var(--surface3);
+    border-bottom: 1px solid var(--border);
+  }
+  .env-table td {
+    padding: 12px 16px;
+    font-size: 13px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .env-table tr:last-child td { border-bottom: none; }
+  .env-table tr:hover td { background: var(--surface2); }
+  .env-key {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--teal);
+  }
+  .env-required {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 2px;
+  }
+  .env-req { background: var(--red-dim); color: var(--red); border: 1px solid rgba(255,71,87,0.2); }
+  .env-opt { background: var(--orange-dim); color: var(--orange); border: 1px solid rgba(255,140,66,0.2); }
+  .env-desc { color: var(--secondary); font-size: 12px; }
+
+  /* ─── NAV BUTTONS ─── */
+  .step-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 32px 0;
+    margin-top: 40px;
+    border-top: 1px solid var(--border);
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    border: 1px solid;
+    transition: all 0.2s;
+    text-decoration: none;
+  }
+  .btn-primary {
+    background: var(--teal);
+    border-color: var(--teal);
+    color: var(--bg);
+    font-weight: 700;
+  }
+  .btn-primary:hover { background: #00f0c0; }
+  .btn-secondary {
+    background: transparent;
+    border-color: var(--border2);
+    color: var(--secondary);
+  }
+  .btn-secondary:hover { border-color: var(--teal); color: var(--teal); }
+  .btn-disabled {
+    background: transparent;
+    border-color: var(--border);
+    color: var(--muted);
+    cursor: not-allowed;
+  }
+
+  /* ─── OVERVIEW CARDS ─── */
+  .overview-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  .ov-card {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 20px;
+  }
+  .ov-icon { font-size: 24px; margin-bottom: 10px; display: block; }
+  .ov-title { font-family: 'Cabinet Grotesk', sans-serif; font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+  .ov-desc { font-size: 12px; color: var(--secondary); line-height: 1.6; }
+
+  /* ─── STEP PILLS (overview) ─── */
+  .steps-overview {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 32px;
+  }
+  .step-pill {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .step-pill:hover { border-color: var(--teal); }
+  .pill-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--teal);
+    min-width: 32px;
+  }
+  .pill-name { font-weight: 600; font-size: 14px; }
+  .pill-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    margin-left: auto;
+  }
+
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+    .sidebar { position: static; height: auto; }
+    .step-section { padding: 32px 24px; }
+    .overview-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+<!-- ═══════════ SIDEBAR ═══════════ -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-tag">42 Luanda · Sistema PS</div>
+    <div class="logo-title"><em>PS42</em> Luanda</div>
+    <div class="logo-phase">◆ FASE 1 · FUNDAÇÃO</div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-group">
+      <div class="nav-group-label">Visão Geral</div>
+      <div class="nav-item active" onclick="goTo('overview')">
+        <span class="nav-num">00</span>
+        <span class="nav-dot"></span>
+        Introdução à Fase 1
+      </div>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-label">Setup do Projecto</div>
+      <div class="nav-item" onclick="goTo('step1')">
+        <span class="nav-num">01</span>
+        <span class="nav-dot"></span>
+        Criar o Projecto Next.js
+      </div>
+      <div class="nav-item" onclick="goTo('step2')">
+        <span class="nav-num">02</span>
+        <span class="nav-dot"></span>
+        Estrutura de Pastas
+      </div>
+      <div class="nav-item" onclick="goTo('step3')">
+        <span class="nav-num">03</span>
+        <span class="nav-dot"></span>
+        Instalar Dependências
+      </div>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-label">Configuração</div>
+      <div class="nav-item" onclick="goTo('step4')">
+        <span class="nav-num">04</span>
+        <span class="nav-dot"></span>
+        Variáveis de Ambiente
+      </div>
+      <div class="nav-item" onclick="goTo('step5')">
+        <span class="nav-num">05</span>
+        <span class="nav-dot"></span>
+        Supabase + Prisma
+      </div>
+      <div class="nav-item" onclick="goTo('step6')">
+        <span class="nav-num">06</span>
+        <span class="nav-dot"></span>
+        Schema da Base de Dados
+      </div>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-label">Autenticação</div>
+      <div class="nav-item" onclick="goTo('step7')">
+        <span class="nav-num">07</span>
+        <span class="nav-dot"></span>
+        42 OAuth na Intra
+      </div>
+      <div class="nav-item" onclick="goTo('step8')">
+        <span class="nav-num">08</span>
+        <span class="nav-dot"></span>
+        NextAuth.js Config
+      </div>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-label">Interface Base</div>
+      <div class="nav-item" onclick="goTo('step9')">
+        <span class="nav-num">09</span>
+        <span class="nav-dot"></span>
+        Design System
+      </div>
+      <div class="nav-item" onclick="goTo('step10')">
+        <span class="nav-num">10</span>
+        <span class="nav-dot"></span>
+        Layout + Middleware
+      </div>
+      <div class="nav-item" onclick="goTo('step11')">
+        <span class="nav-num">11</span>
+        <span class="nav-dot"></span>
+        Testar + Commit
+      </div>
+    </div>
+  </nav>
+
+  <div class="sidebar-progress">
+    <div class="progress-label">
+      <span>PROGRESSO</span>
+      <span id="progress-pct">0%</span>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+    </div>
+  </div>
+</aside>
+
+<!-- ═══════════ MAIN CONTENT ═══════════ -->
+<main class="main">
+
+<!-- ──────── STEP 0: OVERVIEW ──────── -->
+<div class="step-section active" id="s-overview">
+  <div class="step-header">
+    <div class="step-meta">
+      <span class="step-badge badge-setup">FASE 1</span>
+      <span class="step-num-label">PASSO 00 DE 11</span>
+    </div>
+    <div class="step-title">Fundação do <em>PS42 Luanda</em></div>
+    <p class="step-desc">
+      Esta fase estabelece toda a base técnica do projecto. Ao final, terás o Next.js a correr, login via 42 Intra funcional, a base de dados estruturada e o design system base pronto.
+    </p>
+    <div class="step-time">Duração estimada: 2–3 horas</div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">O que vamos construir nesta fase</div>
+    <div class="overview-grid">
+      <div class="ov-card">
+        <span class="ov-icon">⚡</span>
+        <div class="ov-title">Projecto Next.js 14</div>
+        <div class="ov-desc">App Router, TypeScript, Tailwind CSS. Estrutura de pastas completa e organizada para crescer até produção.</div>
+      </div>
+      <div class="ov-card">
+        <span class="ov-icon">🔐</span>
+        <div class="ov-title">Login com 42 Intra</div>
+        <div class="ov-desc">OAuth2 via NextAuth.js. Qualquer cadete ou staff entra com a conta da 42 — sem passwords separadas.</div>
+      </div>
+      <div class="ov-card">
+        <span class="ov-icon">🗄️</span>
+        <div class="ov-title">Base de Dados</div>
+        <div class="ov-desc">PostgreSQL no Supabase com Prisma ORM. Schema das 12 tabelas criado e migrado.</div>
+      </div>
+      <div class="ov-card">
+        <span class="ov-icon">🎨</span>
+        <div class="ov-title">Design System Base</div>
+        <div class="ov-desc">Cores, tipografia, componentes base. shadcn/ui configurado. Layout de cadete e staff separados.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">Passos desta fase</div>
+    <div class="steps-overview">
+      <div class="step-pill" onclick="goTo('step1')"><span class="pill-num">01</span><span class="pill-name">Criar o Projecto Next.js</span><span class="pill-time">~10 min</span></div>
+      <div class="step-pill" onclick="goTo('step2')"><span class="pill-num">02</span><span class="pill-name">Estrutura de Pastas</span><span class="pill-time">~15 min</span></div>
+      <div class="step-pill" onclick="goTo('step3')"><span class="pill-num">03</span><span class="pill-name">Instalar Dependências</span><span class="pill-time">~10 min</span></div>
+      <div class="step-pill" onclick="goTo('step4')"><span class="pill-num">04</span><span class="pill-name">Variáveis de Ambiente</span><span class="pill-time">~15 min</span></div>
+      <div class="step-pill" onclick="goTo('step5')"><span class="pill-num">05</span><span class="pill-name">Supabase + Prisma Setup</span><span class="pill-time">~20 min</span></div>
+      <div class="step-pill" onclick="goTo('step6')"><span class="pill-num">06</span><span class="pill-name">Schema da Base de Dados</span><span class="pill-time">~30 min</span></div>
+      <div class="step-pill" onclick="goTo('step7')"><span class="pill-num">07</span><span class="pill-name">42 OAuth na Intra</span><span class="pill-time">~10 min</span></div>
+      <div class="step-pill" onclick="goTo('step8')"><span class="pill-num">08</span><span class="pill-name">NextAuth.js Config</span><span class="pill-time">~20 min</span></div>
+      <div class="step-pill" onclick="goTo('step9')"><span class="pill-num">09</span><span class="pill-name">Design System Base</span><span class="pill-time">~25 min</span></div>
+      <div class="step-pill" onclick="goTo('step10')"><span class="pill-num">10</span><span class="pill-name">Layout + Middleware</span><span class="pill-time">~20 min</span></div>
+      <div class="step-pill" onclick="goTo('step11')"><span class="pill-num">11</span><span class="pill-name">Testar + Primeiro Commit</span><span class="pill-time">~15 min</span></div>
+    </div>
+  </div>
+
+  <div class="info-box tip">
+    <div class="info-label">💡 Metodologia</div>
+    Seguimos passo a passo. <strong>Não avances para o passo seguinte sem teres o anterior a funcionar.</strong> Se algo não funcionar, paramos e resolvemos antes de continuar. Qualidade acima de velocidade.
+  </div>
+
+  <div class="step-nav">
+    <button class="btn btn-disabled">← Anterior</button>
+    <button class="btn btn-primary" onclick="goTo('step1')">Começar — Passo 01 →</button>
+  </div>
+</div>
+
+<!-- ──────── STEP 1: CREATE PROJECT ──────── -->
+<div class="step-section" id="s-step1">
+  <div class="step-header">
+    <div class="step-meta">
+      <span class="step-badge badge-setup">SETUP</span>
+      <span class="step-num-label">PASSO 01 DE 11</span>
+    </div>
+    <div class="step-title">Criar o Projecto <em>Next.js</em></div>
+    <p class="step-desc">Vamos inicializar o projecto com o comando oficial do Next.js, escolhendo as opções certas durante a instalação.</p>
+    <div class="step-time">~10 minutos</div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">1.1 — Escolher onde criar o projecto</div>
+    <p style="color:var(--secondary);font-size:14px;margin-bottom:16px;">Abre o terminal e navega para a pasta onde queres criar o projecto (ex: Desktop, Documents, ou a tua pasta de projectos).</p>
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-label">TERMINAL</span><button class="cmd-copy" onclick="copyCmd(this, 'cd ~/Desktop')">copiar</button></div>
+      <div class="cmd-body"><span class="comment"># Navega para a pasta desejada (ajusta conforme o teu sistema)</span>
+<span class="cmd">cd</span> <span class="arg">~/Desktop</span></div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">1.2 — Criar o projecto Next.js</div>
+    <div class="info-box info">
+      <div class="info-label">ℹ️ Atenção</div>
+      O comando abaixo vai fazer perguntas de configuração. As respostas certas estão no passo 1.3 abaixo.
+    </div>
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-label">TERMINAL</span><button class="cmd-copy" onclick="copyCmd(this, 'npx create-next-app@latest ps42-luanda')">copiar</button></div>
+      <div class="cmd-body"><span class="cmd">npx</span> <span class="arg">create-next-app@latest</span> <span class="str">ps42-luanda</span></div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">1.3 — Respostas correctas durante a instalação</div>
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-label">RESPOSTAS AO INSTALLER</span></div>
+      <div class="cmd-body"><span class="comment">Would you like to use TypeScript?</span>  <span class="val">→ Yes</span>
+<span class="comment">Would you like to use ESLint?</span>        <span class="val">→ Yes</span>
+<span class="comment">Would you like to use Tailwind CSS?</span>  <span class="val">→ Yes</span>
+<span class="comment">Would you like to use `src/` dir?</span>    <span class="val">→ No</span>
+<span class="comment">Would you like App Router?</span>           <span class="val">→ Yes</span>
+<span class="comment">Customize default import alias?</span>     <span class="val">→ Yes</span>
+<span class="comment">What import alias would you like?</span>   <span class="val">→ @/*  (apenas Enter)</span></div>
+    </div>
+    <div class="info-box warning">
+      <div class="info-label">⚠️ Importante</div>
+      <strong>src/ directory = No.</strong> Vamos usar a estrutura raiz com App Router directamente em <code style="font-family:'JetBrains Mono',monospace">/app</code>. Não usar src/ simplifica os imports neste projecto.
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">1.4 — Entrar na pasta e verificar</div>
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-label">TERMINAL</span><button class="cmd-copy" onclick="copyCmd(this, 'cd ps42-luanda && ls')">copiar</button></div>
+      <div class="cmd-body"><span class="cmd">cd</span> <span class="str">ps42-luanda</span>
+<span class="cmd">ls</span>
+
+<span class="output"># Deves ver algo assim:
+# app/  node_modules/  public/  .gitignore
+# next.config.ts  package.json  tailwind.config.ts  tsconfig.json</span></div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">1.5 — Testar que arranca</div>
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-label">TERMINAL</span><button class="cmd-copy" onclick="copyCmd(this, 'npm run dev')">copiar</button></div>
+      <div class="cmd-body"><span class="cmd">npm run dev</span>
+
+<span class="output"># Deves ver:
+#   ▲ Next.js 14.x.x
+#   - Local: http://localhost:3000
+#   ✓ Ready in 2.1s</span></div>
+    </div>
+    <p style="color:var(--secondary);font-size:14px;margin-top:12px;">Abre <strong style="color:var(--teal)">http://localhost:3000</strong> no browser. Se vês a página default do Next.js, está tudo bem. Pára o servidor com <code style="font-family:'JetBrains Mono',monospace;color:var(--orange)">Ctrl+C</code>.</p>
+  </div>
+
+  <div class="block">
+    <div class="block-title">✅ Checklist do Passo 01</div>
+    <ul class="checklist" id="cl-step1">
+      <li><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-text">Projecto criado com <code style="font-family:'JetBrains Mono',monospace">npx create-next-app@latest ps42-luanda</code></span></li>
+      <li><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-text">TypeScript, Tailwind e App Router seleccionados</span></li>
+      <li><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-text">npm run dev funciona em localhost:3000</span></li>
+      <li><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-text">Ctrl+C para parar o servidor antes de continuar</span></li>
+    </ul>
+  </div>
+
+  <div class="step-nav">
+    <button class="btn btn-secondary" onclick="goTo('overview')">← Anterior</button>
+    <button class="btn btn-primary" onclick="goTo('step2')">Passo 02 →</button>
+  </div>
+</div>
+
+<!-- ──────── STEP 2: FOLDER STRUCTURE ──────── -->
+<div class="step-section" id="s-step2">
+  <div class="step-header">
+    <div class="step-meta">
+      <span class="step-badge badge-setup">SETUP</span>
+      <span class="step-num-label">PASSO 02 DE 11</span>
+    </div>
+    <div class="step-title">Estrutura de <em>Pastas</em></div>
+    <p class="step-desc">Vamos criar a estrutura completa de pastas do projecto antes de instalar dependências. Uma boa organização agora evita confusão mais tarde.</p>
+    <div class="step-time">~15 minutos</div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">2.1 — Estrutura final do projecto</div>
+    <div class="file-tree">
+<span class="tree-dir">ps42-luanda/</span>
+├── <span class="tree-dir">app/</span>                         <span class="comment"># App Router (Next.js 14)</span>
+│   ├── <span class="tree-dir">(auth)/</span>                  <span class="comment"># Route group — páginas de auth</span>
+│   │   └── <span class="tree-dir">login/</span>
+│   │       └── <span class="tree-new">page.tsx</span>
+│   ├── <span class="tree-dir">(cadete)/</span>                <span class="comment"># Route group — área do cadete</span>
+│   │   ├── <span class="tree-dir">dashboard/</span>
+│   │   ├── <span class="tree-dir">requisicao/</span>
+│   │   ├── <span class="tree-dir">fila/</span>
+│   │   ├── <span class="tree-dir">jogos/</span>
+│   │   ├── <span class="tree-dir">ranking/</span>
+│   │   ├── <span class="tree-dir">perfil/</span>
+│   │   ├── <span class="tree-dir">torneios/</span>
+│   │   ├── <span class="tree-dir">conquistas/</span>
+│   │   ├── <span class="tree-dir">historico/</span>
+│   │   ├── <span class="tree-dir">denuncias/</span>
+│   │   └── <span class="tree-new">layout.tsx</span>             <span class="comment"># Layout da área cadete</span>
+│   ├── <span class="tree-dir">(staff)/</span>                 <span class="comment"># Route group — área do staff</span>
+│   │   ├── <span class="tree-dir">staff/</span>
+│   │   │   ├── <span class="tree-dir">dashboard/</span>
+│   │   │   ├── <span class="tree-dir">requisicoes/</span>
+│   │   │   ├── <span class="tree-dir">cadetes/</span>
+│   │   │   ├── <span class="tree-dir">sessoes/</span>
+│   │   │   ├── <span class="tree-dir">jogos/</span>
+│   │   │   ├── <span class="tree-dir">incidentes/</span>
+│   │   │   ├── <span class="tree-dir">denuncias/</span>
+│   │   │   ├── <span class="tree-dir">disciplinar/</span>
+│   │   │   ├── <span class="tree-dir">relatorios/</span>
+│   │   │   └── <span class="tree-dir">configuracoes/</span>
+│   │   └── <span class="tree-new">layout.tsx</span>             <span class="comment"># Layout da área staff</span>
+│   ├── <span class="tree-dir">api/</span>                     <span class="comment"># API Routes</span>
+│   │   ├── <span class="tree-dir">auth/</span>
+│   │   │   └── <span class="tree-dir">[...nextauth]/</span>
+│   │   ├── <span class="tree-dir">sessions/</span>
+│   │   ├── <span class="tree-dir">queue/</span>
+│   │   ├── <span class="tree-dir">eligibility/</span>
+│   │   └── <span class="tree-dir">intra/</span>
+│   ├── <span class="tree-new">layout.tsx</span>               <span class="comment"># Root layout</span>
+│   ├── <span class="tree-new">page.tsx</span>                 <span class="comment"># Landing page pública</span>
+│   └── <span class="tree-new">globals.css</span>
+├── <span class="tree-dir">components/</span>                  <span class="comment"># Componentes reutilizáveis</span>
+│   ├── <span class="tree-dir">ui/</span>                      <span class="comment"># shadcn/ui components</span>
+│   ├── <span class="tree-dir">cadete/</span>                  <span class="comment"># Componentes específicos cadete</span>
+│   ├── <span class="tree-dir">staff/</span>                   <span class="comment"># Componentes específicos staff</span>
+│   └── <span class="tree-dir">shared/</span>                  <span class="comment"># Componentes partilhados</span>
+├── <span class="tree-dir">lib/</span>                         <span class="comment"># Utilitários e configurações</span>
+│   ├── <span class="tree-new">auth.ts</span>                  <span class="comment"># NextAuth config</span>
+│   ├── <span class="tree-new">prisma.ts</span>                <span class="comment"># Prisma client singleton</span>
+│   ├── <span class="tree-new">redis.ts</span>                 <span class="comment"># Redis client</span>
+│   ├── <span class="tree-new">intra.ts</span>                 <span class="comment"># 42 Intra API wrapper</span>
+│   └── <span class="tree-new">utils.ts</span>                 <span class="comment"># Funções utilitárias</span>
+├── <span class="tree-dir">prisma/</span>                      <span class="comment"># Prisma ORM</span>
+│   └── <span class="tree-important">schema.prisma</span>            <span class="comment"># Schema completo das 12 tabelas</span>
+├── <span class="tree-dir">types/</span>                       <span class="comment"># TypeScript types globais</span>
+│   └── <span class="tree-new">index.ts</span>
+├── <span class="tree-dir">hooks/</span>                       <span class="comment"># React hooks customizados</span>
+├── <span class="tree-dir">middleware.ts</span>                <span class="comment"># Protecção de rotas</span>
+└── <span class="tree-important">.env.local</span>                  <span class="comment"># Variáveis de ambiente (NUNCA commitar)</span>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">2.2 — Criar as pastas com um único comando</div>
+    <p style="color:var(--secondary);font-size:14px;margin-bottom:16px;">Copia e corre este comando na raiz do projecto <code style="font-family:'JetBrains Mono',monospace;color:var(--teal)">ps42-luanda/</code>:</p>
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-label">TERMINAL — NA RAIZ DO PROJECTO</span><button class="cmd-copy" onclick="copyCmd(this)">copiar</button></div>
+      <div class="cmd-body"><span class="cmd">mkdir</span> <span class="flag">-p</span> <span class="str">app/(auth)/login</span>
+<span class="cmd">mkdir</span> <span class="flag">-p</span> <span class="str">"app/(cadete)"/{dashboard,requisicao,fila,jogos,ranking,perfil,torneios,conquistas,historico,denuncias}</span>
+<span class="cmd">mkdir</span> <span class="flag">-p</span> <span class="str">"app/(staff)/staff"/{dashboard,requisicoes,cadetes,sessoes,jogos,incidentes,denuncias,disciplinar,relatorios,configuracoes}</span>
+<span class="cmd">mkdir</span> <span class="flag">-p</span> <span class="str">app/api/{auth/[...nextauth],sessions,queue,eligibility,intra}</span>
+<span class="cmd">mkdir</span> <span class="flag">-p</span> <span class="str">components/{ui,cadete,staff,shared}</span>
+<span class="cmd">mkdir</span> <span class="flag">-p</span> <span class="str">lib prisma types hooks</span></div>
+    </div>
+    <div class="info-box tip">
+      <div class="info-label">💡 Route Groups</div>
+      As pastas entre parênteses <strong>(cadete)</strong> e <strong>(staff)</strong> são "Route Groups" do Next.js. Agrupam rotas sem afectar a URL — o URL de <code style="font-family:'JetBrains Mono',monospace">/dashboard</code> não terá <code style="font-family:'JetBrains Mono',monospace">/cadete/</code> no caminho.
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">2.3 — Criar ficheiros base vazios</div>
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-label">TERMINAL</span></div>
+      <div class="cmd-body"><span class="comment"># Ficheiros de lib</span>
+<span class="cmd">touch</span> <span class="str">lib/auth.ts lib/prisma.ts lib/redis.ts lib/intra.ts lib/utils.ts</span>
+
+<span class="comment"># Types e hooks</span>
+<span class="cmd">touch</span> <span class="str">types/index.ts</span>
+
+<span class="comment"># Middleware (protecção de rotas)</span>
+<span class="cmd">touch</span> <span class="str">middleware.ts</span>
+
+<span class="comment"># Layouts dos route groups</span>
+<span class="cmd">touch</span> <span class="str">"app/(cadete)/layout.tsx"</span>
+<span class="cmd">touch</span> <span class="str">"app/(staff)/layout.tsx"</span>
+
+<span class="comment"># .env.local (variáveis de ambiente)</span>
+<span class="cmd">touch</span> <span class="str">.env.local</span></div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">2.4 — Adicionar .env.local ao .gitignore</div>
+    <p style="color:var(--secondary);font-size:14px;margin-bottom:16px;">Verifica que o <code style="font-family:'JetBrains Mono',monospace">.gitignore</code> já tem <code style="font-family:'JetBrains Mono',monospace">.env.local</code> (o Next.js adiciona automaticamente, mas vamos confirmar):</p>
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-label">TERMINAL</span><button class="cmd-copy" onclick="copyCmd(this, 'grep -n .env .gitignore')">copiar</button></div>
+      <div class="cmd-body"><span class="cmd">grep</span> <span class="flag">-n</span> <span class="str">.env</span> .gitignore
+
+<span class="output"># Deves ver:
+# .env*.local</span></div>
+    </div>
+    <div class="info-box danger">
+      <div class="info-label">🔴 Nunca commitar</div>
+      O ficheiro <strong>.env.local</strong> contém as tuas credenciais secretas. <strong>Nunca deve ir para o GitHub.</strong> O .gitignore já o protege, mas confirma sempre antes de fazer commit.
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">✅ Checklist do Passo 02</div>
+    <ul class="checklist">
+      <li><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-text">Todas as pastas criadas com mkdir</span></li>
+      <li><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-text">Ficheiros base criados (lib/, types/, middleware.ts)</span></li>
+      <li><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-text">.env.local está no .gitignore</span></li>
+    </ul>
+  </div>
+
+  <div class="step-nav">
+    <button class="btn btn-secondary" onclick="goTo('step1')">← Passo 01</button>
+    <button class="btn btn-primary" onclick="goTo('step3')">Passo 03 →</button>
+  </div>
+</div>
+
+<!-- ──────── STEP 3: DEPENDENCIES ──────── -->
+<div class="step-section" id="s-step3">
+  <div class="step-header">
+    <div class="step-meta">
+      <span class="step-badge badge-setup">SETUP</span>
+      <span class="step-num-label">PASSO 03 DE 11</span>
+    </div>
+    <div class="step-title">Instalar <em>Dependências</em></div>
+    <p class="step-desc">Vamos instalar todas as bibliotecas necessárias para o projecto. Dividimos em grupos para perceberes o que cada uma faz.</p>
+    <div class="step-time">~10 minutos</div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">3.1 — Dependências principais</div>
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-label">TERMINAL</span><button class="cmd-copy" onclick="copyCmd(this, 'npm install next-auth@beta @auth/prisma-adapter @prisma/client prisma pusher pusher-js @upstash/redis @upstash/ratelimit resend cloudinary recharts date-fns zod')">copiar</button></div>
+      <div class="cmd-body"><span class="cmd">npm install</span> <span class="arg">\</span>
+  <span class="str">next-auth@beta</span>          <span class="comment"># Auth.js v5 (NextAuth)</span>
+  <span class="str">@auth/prisma-adapter</span>    <span class="comment"># Adaptor NextAuth ↔ Prisma</span>
+  <span class="str">@prisma/client</span>          <span class="comment"># Prisma ORM client</span>
+  <span class="str">prisma</span>                  <span class="comment"># Prisma CLI</span>
+  <span class="str">pusher</span>                  <span class="comment"># Pusher server-side</span>
+  <span class="str">pusher-js</span>               <span class="comment"># Pusher client-side</span>
+  <span class="str">@upstash/redis</span>          <span class="comment"># Redis cache</span>
+  <span class="str">@upstash/ratelimit</span>      <span class="comment"># Rate limiting</span>
+  <span class="str">resend</span>                  <span class="comment"># Email transaccional</span>
+  <span class="str">cloudinary</span>              <span class="comment"># Upload de imagens</span>
+  <span class="str">recharts</span>                <span class="comment"># Gráficos</span>
+  <span class="str">date-fns</span>                <span class="comment"># Manipulação de datas</span>
+  <span class="str">zod</span>                     <span class="comment"># Validação de schemas</span></div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">3.2 — Instalar shadcn/ui</div>
+    <p style="color:var(--secondary);font-size:14px;margin-bottom:16px;">O shadcn/ui tem um processo de instalação especial — usa o seu próprio CLI:</p>
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-label">TERMINAL</span><button class="cmd-copy" onclick="copyCmd(this, 'npx shadcn@latest init')">copiar</button></div>
+      <div class="cmd-body"><span class="cmd">npx shadcn@latest init</span>
+
+<span class="comment"># Respostas:</span>
+<span class="output">Which style would you like to use?</span>    <span class="val">→ Default</span>
+<span class="output">Which color would you like to use?</span>    <span class="val">→ Slate</span>
+<span class="output">Would you like to use CSS variables?</span>  <span class="val">→ Yes</span></div>
+    </div>
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-label">TERMINAL — Instalar componentes base</span><button class="cmd-copy" onclick="copyCmd(this, 'npx shadcn@latest add button card badge input label select textarea toast dialog sheet tabs avatar dropdown-menu')">copiar</button></div>
+      <div class="cmd-body"><span class="cmd">npx shadcn@latest add</span> <span class="str">\</span>
+  button card badge input label select <span class="str">\</span>
+  textarea toast dialog sheet tabs <span class="str">\</span>
+  avatar dropdown-menu separator <span class="str">\</span>
+  skeleton alert progress</div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">3.3 — Dependências de desenvolvimento</div>
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-label">TERMINAL</span><button class="cmd-copy" onclick="copyCmd(this, 'npm install -D @types/node vitest @vitejs/plugin-react @playwright/test')">copiar</button></div>
+      <div class="cmd-body"><span class="cmd">npm install</span> <span class="flag">-D</span> <span class="str">\</span>
+  <span class="str">@types/node</span>          <span class="comment"># Types Node.js</span>
+  <span class="str">vitest</span>               <span class="comment"># Testes unitários</span>
+  <span class="str">@vitejs/plugin-react</span> <span class="comment"># Plugin React para Vitest</span>
+  <span class="str">@playwright/test</span>     <span class="comment"># Testes E2E</span></div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">3.4 — Inicializar o Prisma</div>
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-label">TERMINAL</span><button class="cmd-copy" onclick="copyCmd(this, 'npx prisma init --datasource-provider postgresql')">copiar</button></div>
+      <div class="cmd-body"><span class="cmd">npx prisma init</span> <span class="flag">--datasource-provider</span> <span class="str">postgresql</span>
+
+<span class="output"># Cria:
+# ✔ prisma/schema.prisma
+# ✔ .env  (com DATABASE_URL de exemplo)</span></div>
+    </div>
+    <div class="info-box warning">
+      <div class="info-label">⚠️ Nota</div>
+      O Prisma cria um <code style="font-family:'JetBrains Mono',monospace">.env</code> separado. Nós vamos usar o <strong>.env.local</strong> (padrão Next.js). Vamos copiar o DATABASE_URL para o .env.local no passo 04.
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">✅ Checklist do Passo 03</div>
+    <ul class="checklist">
+      <li><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-text">npm install das dependências principais concluído sem erros</span></li>
+      <li><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-text">shadcn/ui inicializado e componentes instalados</span></li>
+      <li><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-text">Dependências de dev instaladas</span></li>
+      <li><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-text">Prisma inicializado (pasta prisma/ com schema.prisma)</span></li>
+    </ul>
+  </div>
+
+  <div class="step-nav">
+    <button class="btn btn-secondary" onclick="goTo('step2')">← Passo 02</button>
+    <button class="btn btn-primary" onclick="goTo('step4')">Passo 04 →</button>
+  </div>
+</div>
+
+<!-- ──────── STEP 4: ENV VARS ──────── -->
+<div class="step-section" id="s-step4">
+  <div class="step-header">
+    <div class="step-meta">
+      <span class="step-badge badge-config">CONFIG</span>
+      <span class="step-num-label">PASSO 04 DE 11</span>
+    </div>
+    <div class="step-title">Variáveis de <em>Ambiente</em></div>
+    <p class="step-desc">Configurar todas as variáveis secretas no .env.local. Esta é a "caixa-forte" do projecto — contém todas as chaves e credenciais.</p>
+    <div class="step-time">~15 minutos</div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">4.1 — Tabela de variáveis necessárias</div>
+    <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:6px;overflow:hidden;">
+      <table class="env-table">
+        <thead>
+          <tr>
+            <th>Variável</th>
+            <th>Onde obter</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="env-key">DATABASE_URL</span><div class="env-desc">URL de conexão PostgreSQL do Supabase</div></td>
+            <td style="font-size:12px;color:var(--secondary)">Supabase → Project → Settings → Database → Connection string</td>
+            <td><span class="env-required env-req">OBRIGATÓRIO</span></td>
+          </tr>
+          <tr>
+            <td><span class="env-key">DIRECT_URL</span><div class="env-desc">URL directa para migrações Prisma (Supabase)</div></td>
+            <td style="font-size:12px;color:var(--secondary)">Supabase → Database → Connection string → Direct connection</td>
+            <td><span class="env-required env-req">OBRIGATÓRIO</span></td>
+          </tr>
+          <tr>
+            <td><span class="env-key">NEXTAUTH_URL</span><div class="env-desc">URL base da aplicação</div></td>
+            <td style="font-size:12px;color:var(--secondary)">Em dev: http://localhost:3000</td>
+            <td><span class="env-required env-req">OBRIGATÓRIO</span></td>
+          </tr>
+          <tr>
+            <td><span class="env-key">NEXTAUTH_SECRET</span><div class="env-desc">Segredo para assinar sessões JWT</div></td>
+            <td style="font-size:12px;color:var(--secondary)">Gerar com: openssl rand -base64 32</td>
+            <td><span class="env-required env-req">OBRIGATÓRIO</span></td>
+          </tr>
+          <tr>
+            <td><span class="env-key">FORTY_TWO_CLIENT_ID</span><div class="env-desc">Client ID da aplicação na 42 Intra</div></td>
+            <td style="font-size:12px;color:var(--secondary)">42 Intra → Settings → Applications → A tua app</td>
+            <td><span class="env-required env-req">OBRIGATÓRIO</span></td>
+          </tr>
+          <tr>
+            <td><span class="env-key">FORTY_TWO_CLIENT_SECRET</span><div class="env-desc">Client Secret da aplicação na 42 Intra</div></td>
+            <td style="font-size:12px;color:var(--secondary)">42 Intra → Settings → Applications → A tua app</td>
+            <td><span class="env-required env-req">OBRIGATÓRIO</span></td>
+          </tr>
+          <tr>
+            <td><span class="env-key">PUSHER_APP_ID</span><br><span class="env-key">PUSHER_KEY</span><br><span class="env-key">PUSHER_SECRET</span><br><span class="env-key">PUSHER_CLUSTER</span></td>
+            <td style="font-size:12px;color:var(--secondary)">pusher.com → Dashboard → App Keys</td>
+            <td><span class="env-required env-opt">FASE 2</span></td>
+          </tr>
+          <tr>
+            <td><span class="env-key">UPSTASH_REDIS_REST_URL</span><br><span class="env-key">UPSTASH_REDIS_REST_TOKEN</span></td>
+            <td style="font-size:12px;color:var(--secondary)">console.upstash.com → Database → REST API</td>
+            <td><span class="env-required env-opt">FASE 2</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">4.2 — Gerar o NEXTAUTH_SECRET</div>
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-label">TERMINAL</span><button class="cmd-copy" onclick="copyCmd(this, 'openssl rand -base64 32')">copiar</button></div>
+      <div class="cmd-body"><span class="cmd">openssl rand</span> <span class="flag">-base64</span> <span class="num">32</span>
+
+<span class="output"># Exemplo de output (o teu será diferente):
+# K7mN2xQ9vR4tL8pJ1wH6sY3nF5bA0cE=</span></div>
+    </div>
+    <p style="color:var(--secondary);font-size:13px;margin-top:8px;">Copia esse valor — vai para o <code style="font-family:'JetBrains Mono',monospace;color:var(--teal)">NEXTAUTH_SECRET</code> no .env.local.</p>
+  </div>
+
+  <div class="block">
+    <div class="block-title">4.3 — Conteúdo do .env.local</div>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-filename">.env.local</span>
+        <span class="code-lang">ENV</span>
+      </div>
+      <div class="code-body"><span class="comment"># ════════════════════════════════════════════
+# PS42 LUANDA — VARIÁVEIS DE AMBIENTE
+# NÃO COMMITAR ESTE FICHEIRO!
+# ════════════════════════════════════════════</span>
+
+<span class="comment"># ── BASE DE DADOS (Supabase) ──</span>
+<span class="prop">DATABASE_URL</span>=<span class="str">"postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres?pgbouncer=true"</span>
+<span class="prop">DIRECT_URL</span>=<span class="str">"postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:5432/postgres"</span>
+
+<span class="comment"># ── NEXTAUTH ──</span>
+<span class="prop">NEXTAUTH_URL</span>=<span class="str">"http://localhost:3000"</span>
+<span class="prop">NEXTAUTH_SECRET</span>=<span class="str">"[resultado do openssl rand -base64 32]"</span>
+
+<span class="comment"># ── 42 INTRA API ──</span>
+<span class="prop">FORTY_TWO_CLIENT_ID</span>=<span class="str">"[o teu client_id da 42 Intra]"</span>
+<span class="prop">FORTY_TWO_CLIENT_SECRET</span>=<span class="str">"[o teu client_secret da 42 Intra]"</span>
+<span class="prop">FORTY_TWO_CAMPUS_ID</span>=<span class="str">"[ID do campus 42 Luanda — confirmar com staff]"</span>
+
+<span class="comment"># ── PUSHER (configurar na Fase 2) ──</span>
+<span class="prop">PUSHER_APP_ID</span>=<span class="str">""</span>
+<span class="prop">NEXT_PUBLIC_PUSHER_KEY</span>=<span class="str">""</span>
+<span class="prop">PUSHER_SECRET</span>=<span class="str">""</span>
+<span class="prop">NEXT_PUBLIC_PUSHER_CLUSTER</span>=<span class="str">"eu"</span>
+
+<span class="comment"># ── UPSTASH REDIS (configurar na Fase 2) ──</span>
+<span class="prop">UPSTASH_REDIS_REST_URL</span>=<span class="str">""</span>
+<span class="prop">UPSTASH_REDIS_REST_TOKEN</span>=<span class="str">""</span>
+
+<span class="comment"># ── RESEND EMAIL (configurar na Fase 4) ──</span>
+<span class="prop">RESEND_API_KEY</span>=<span class="str">""</span>
+
+<span class="comment"># ── CLOUDINARY (configurar na Fase 4) ──</span>
+<span class="prop">CLOUDINARY_CLOUD_NAME</span>=<span class="str">""</span>
+<span class="prop">CLOUDINARY_API_KEY</span>=<span class="str">""</span>
+<span class="prop">CLOUDINARY_API_SECRET</span>=<span class="str">""</span></div>
+    </div>
+  </div>
+
+  <div class="info-box tip">
+    <div class="info-label">💡 NEXT_PUBLIC_ prefix</div>
+    Variáveis com o prefixo <strong>NEXT_PUBLIC_</strong> ficam expostas no browser (client-side). Usa apenas para chaves que não são secretas — como a Pusher Key pública ou o cluster. Nunca colocar secrets com NEXT_PUBLIC_.
+  </div>
+
+  <div class="block">
+    <div class="block-title">✅ Checklist do Passo 04</div>
+    <ul class="checklist">
+      <li><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-text">NEXTAUTH_SECRET gerado com openssl e copiado para .env.local</span></li>
+      <li><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-text">DATABASE_URL e DIRECT_URL do Supabase preenchidos</span></li>
+      <li><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-text">FORTY_TWO_CLIENT_ID e CLIENT_SECRET preenchidos</span></li>
+      <li><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-text">NEXTAUTH_URL definido como http://localhost:3000</span></li>
+    </ul>
+  </div>
+
+  <div class="step-nav">
+    <button class="btn btn-secondary" onclick="goTo('step3')">← Passo 03</button>
+    <button class="btn btn-primary" onclick="goTo('step5')">Passo 05 →</button>
+  </div>
+</div>
+
+<!-- ──────── STEP 5: SUPABASE + PRISMA ──────── -->
+<div class="step-section" id="s-step5">
+  <div class="step-header">
+    <div class="step-meta">
+      <span class="step-badge badge-db">DATABASE</span>
+      <span class="step-num-label">PASSO 05 DE 11</span>
+    </div>
+    <div class="step-title">Supabase + <em>Prisma</em></div>
+    <p class="step-desc">Conectar o Prisma ao Supabase e criar o Prisma Client singleton — a porta de entrada de toda a comunicação com a base de dados.</p>
+    <div class="step-time">~20 minutos</div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">5.1 — Obter as URLs do Supabase</div>
+    <p style="font-size:14px;color:var(--secondary);margin-bottom:16px;">No dashboard do Supabase, navega para o teu projecto:</p>
+    <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:20px;font-size:13px;line-height:2.2;">
+      <div>1. Entra em <strong style="color:var(--teal)">supabase.com</strong> → abre o teu projecto</div>
+      <div>2. Vai a <strong style="color:var(--white)">Project Settings</strong> → <strong style="color:var(--white)">Database</strong></div>
+      <div>3. Em <strong style="color:var(--white)">Connection string</strong>, selecciona <strong style="color:var(--orange)">URI</strong></div>
+      <div>4. Copia a string com <strong style="color:var(--orange)">?pgbouncer=true</strong> → é o <code style="font-family:'JetBrains Mono',monospace;color:var(--teal)">DATABASE_URL</code></div>
+      <div>5. Copia a string <strong>sem</strong> pgbouncer (porta 5432) → é o <code style="font-family:'JetBrains Mono',monospace;color:var(--teal)">DIRECT_URL</code></div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">5.2 — Prisma Client Singleton</div>
+    <p style="color:var(--secondary);font-size:14px;margin-bottom:16px;">Este padrão é essencial no Next.js — evita criar múltiplas instâncias do Prisma em desenvolvimento:</p>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-filename">lib/prisma.ts</span>
+        <span class="code-lang">TYPESCRIPT</span>
+      </div>
+      <div class="code-body"><span class="kw">import</span> { PrismaClient } <span class="kw">from</span> <span class="str">'@prisma/client'</span>
+
+<span class="kw">const</span> <span class="fn">globalForPrisma</span> = <span class="fn">globalThis</span> <span class="kw">as</span> <span class="kw">unknown</span> <span class="kw">as</span> {
+  prisma: PrismaClient | <span class="kw">undefined</span>
+}
+
+<span class="kw">export const</span> prisma =
+  <span class="fn">globalForPrisma</span>.prisma ??
+  <span class="kw">new</span> <span class="fn">PrismaClient</span>({
+    log: <span class="fn">process</span>.env.<span class="prop">NODE_ENV</span> === <span class="str">'development'</span>
+      ? [<span class="str">'query'</span>, <span class="str">'error'</span>, <span class="str">'warn'</span>]
+      : [<span class="str">'error'</span>],
+  })
+
+<span class="kw">if</span> (<span class="fn">process</span>.env.<span class="prop">NODE_ENV</span> !== <span class="str">'production'</span>)
+  <span class="fn">globalForPrisma</span>.prisma = prisma</div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">5.3 — Testar a conexão com o Supabase</div>
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-label">TERMINAL</span><button class="cmd-copy" onclick="copyCmd(this, 'npx prisma db pull')">copiar</button></div>
+      <div class="cmd-body"><span class="cmd">npx prisma db pull</span>
+
+<span class="output"># Se a conexão funcionar, vês algo como:
+# ✔ Introspected 0 models and wrote them into prisma/schema.prisma
+# (0 modelos porque a DB está vazia — é normal)</span></div>
+    </div>
+    <div class="info-box tip">
+      <div class="info-label">💡 Se der erro de conexão</div>
+      Verifica se as URLs do Supabase estão correctas no .env.local e se substituíste <strong>[password]</strong> pela tua password real do projecto Supabase (Settings → Database → Database password).
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">✅ Checklist do Passo 05</div>
+    <ul class="checklist">
+      <li><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-text">DATABASE_URL e DIRECT_URL do Supabase correctos no .env.local</span></li>
+      <li><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-text">lib/prisma.ts criado com o singleton pattern</span></li>
+      <li><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-text">npx prisma db pull funciona sem erros</span></li>
+    </ul>
+  </div>
+
+  <div class="step-nav">
+    <button class="btn btn-secondary" onclick="goTo('step4')">← Passo 04</button>
+    <button class="btn btn-primary" onclick="goTo('step6')">Passo 06 →</button>
+  </div>
+</div>
+
+<!-- ──────── STEP 6: SCHEMA ──────── -->
+<div class="step-section" id="s-step6">
+  <div class="step-header">
+    <div class="step-meta">
+      <span class="step-badge badge-db">DATABASE</span>
+      <span class="step-num-label">PASSO 06 DE 11</span>
+    </div>
+    <div class="step-title">Schema da <em>Base de Dados</em></div>
+    <p class="step-desc">Vamos escrever o schema Prisma completo com as 12 tabelas definidas no blueprint. Este é o coração estrutural de todo o sistema.</p>
+    <div class="step-time">~30 minutos</div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">6.1 — Schema Prisma completo</div>
+    <p style="color:var(--secondary);font-size:14px;margin-bottom:16px;">Substitui todo o conteúdo de <code style="font-family:'JetBrains Mono',monospace;color:var(--teal)">prisma/schema.prisma</code> pelo seguinte:</p>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-filename">prisma/schema.prisma</span>
+        <span class="code-lang">PRISMA</span>
+      </div>
+      <div class="code-body"><span class="comment">// PS42 Luanda — Prisma Schema
+// Gerado com base no regulamento (10 artigos) + Blueprint v1.0</span>
+
+<span class="kw">generator</span> client {
+  provider = <span class="str">"prisma-client-js"</span>
+}
+
+<span class="kw">datasource</span> db {
+  provider  = <span class="str">"postgresql"</span>
+  url       = <span class="fn">env</span>(<span class="str">"DATABASE_URL"</span>)
+  directUrl = <span class="fn">env</span>(<span class="str">"DIRECT_URL"</span>)
+}
+
+<span class="comment">// ─── ENUMS ───────────────────────────────────────</span>
+
+<span class="kw">enum</span> <span class="type">Role</span> {
+  CADETE
+  STAFF
+  ADMIN
+}
+
+<span class="kw">enum</span> <span class="type">SessionStatus</span> {
+  PENDING      <span class="comment">// Pedido submetido, aguarda aprovação</span>
+  APPROVED     <span class="comment">// Aprovado, aguarda levantamento</span>
+  ACTIVE       <span class="comment">// Sessão a decorrer</span>
+  DONE         <span class="comment">// Concluída normalmente</span>
+  CANCELLED    <span class="comment">// Cancelada pelo cadete ou staff</span>
+  REJECTED     <span class="comment">// Rejeitada pelo staff</span>
+}
+
+<span class="kw">enum</span> <span class="type">DisciplinaryType</span> {
+  WARNING      <span class="comment">// Admoestação verbal/escrita (Art. 9b)</span>
+  SUSPENSION   <span class="comment">// Suspensão temporária (Art. 9a)</span>
+  FINE         <span class="comment">// Indemnização por danos (Art. 9c)</span>
+  EXPULSION    <span class="comment">// Expulsão do currículo</span>
+}
+
+<span class="kw">enum</span> <span class="type">ReportCategory</span> {
+  CONDUCT      <span class="comment">// Comportamento inadequado (Art. 6)</span>
+  DAMAGE       <span class="comment">// Danos ao equipamento (Art. 7)</span>
+  RULES        <span class="comment">// Violação de regras gerais</span>
+  CONTENT      <span class="comment">// Conteúdo inapropriado (Art. 6)</span>
+  OTHER
+}
+
+<span class="kw">enum</span> <span class="type">ReportStatus</span> {
+  OPEN
+  REVIEWING
+  RESOLVED
+  DISMISSED
+}
+
+<span class="kw">enum</span> <span class="type">IncidentType</span> {
+  DAMAGE
+  THEFT
+  MISUSE
+  TECHNICAL
+}
+
+<span class="kw">enum</span> <span class="type">MatchType</span> {
+  CASUAL
+  TOURNAMENT
+  RANKED
+}
+
+<span class="kw">enum</span> <span class="type">TournamentStatus</span> {
+  DRAFT
+  OPEN
+  RUNNING
+  DONE
+  CANCELLED
+}
+
+<span class="kw">enum</span> <span class="type">AchievementRarity</span> {
+  COMMON
+  RARE
+  EPIC
+  LEGENDARY
+}
+
+<span class="comment">// ─── MODELS ──────────────────────────────────────</span>
+
+<span class="kw">model</span> <span class="type">User</span> {
+  id              <span class="type">String</span>   <span class="prop">@id</span> <span class="prop">@default</span>(<span class="fn">cuid</span>())
+  intraId         <span class="type">Int</span>      <span class="prop">@unique</span>               <span class="comment">// ID único na 42 Intra</span>
+  login           <span class="type">String</span>   <span class="prop">@unique</span>               <span class="comment">// Login 42 (ex: aferreir)</span>
+  displayName     <span class="type">String</span>
+  email           <span class="type">String</span>   <span class="prop">@unique</span>
+  avatarUrl       <span class="type">String</span>?
+  role            <span class="type">Role</span>     <span class="prop">@default</span>(<span class="val">CADETE</span>)
+  coalitionName   <span class="type">String</span>?                       <span class="comment">// Da API 42 Intra</span>
+  coalitionColor  <span class="type">String</span>?
+  intraLevel      <span class="type">Float</span>    <span class="prop">@default</span>(<span class="num">0</span>)
+  isEligible      <span class="type">Boolean</span>  <span class="prop">@default</span>(<span class="val">false</span>)        <span class="comment">// Calculado pelo motor Art. 3</span>
+  isBlocked       <span class="type">Boolean</span>  <span class="prop">@default</span>(<span class="val">false</span>)        <span class="comment">// Bloqueio manual staff</span>
+  eligibilityNote <span class="type">String</span>?                       <span class="comment">// Motivo se não elegível</span>
+  lastSyncAt      <span class="type">DateTime</span>?                      <span class="comment">// Última sync com API 42</span>
+  createdAt       <span class="type">DateTime</span> <span class="prop">@default</span>(<span class="fn">now</span>())
+  updatedAt       <span class="type">DateTime</span> <span class="prop">@updatedAt</span>
+
+  <span class="comment">// Relações</span>
+  sessions              <span class="type">Session</span>[]
+  gameResults           <span class="type">GameResult</span>[]
+  wonTournaments        <span class="type">Tournament</span>[]        <span class="prop">@relation</span>(<span class="str">"TournamentWinner"</span>)
+  createdTournaments    <span class="type">Tournament</span>[]        <span class="prop">@relation</span>(<span class="str">"TournamentCreator"</span>)
+  userAchievements      <span class="type">UserAchievement</span>[]
+  reportsSubmitted      <span class="type">Report</span>[]            <span class="prop">@relation</span>(<span class="str">"ReportReporter"</span>)
+  reportsReceived       <span class="type">Report</span>[]            <span class="prop">@relation</span>(<span class="str">"ReportSubject"</span>)
+  disciplinaryRecords   <span class="type">DisciplinaryRecord</span>[] <span class="prop">@relation</span>(<span class="str">"DisciplinarySubject"</span>)
+  disciplinaryIssued    <span class="type">DisciplinaryRecord</span>[] <span class="prop">@relation</span>(<span class="str">"DisciplinaryIssuer"</span>)
+  incidentsResponsible  <span class="type">Incident</span>[]          <span class="prop">@relation</span>(<span class="str">"IncidentResponsible"</span>)
+  incidentsReported     <span class="type">Incident</span>[]          <span class="prop">@relation</span>(<span class="str">"IncidentReporter"</span>)
+  suggestedGames        <span class="type">Game</span>[]              <span class="prop">@relation</span>(<span class="str">"GameSuggester"</span>)
+  approvedGames         <span class="type">Game</span>[]              <span class="prop">@relation</span>(<span class="str">"GameApprover"</span>)
+  notifications         <span class="type">Notification</span>[]
+  auditLogs             <span class="type">AuditLog</span>[]
+
+  <span class="prop">@@index</span>([intraId])
+  <span class="prop">@@index</span>([login])
+  <span class="prop">@@map</span>(<span class="str">"users"</span>)
+}
+
+<span class="kw">model</span> <span class="type">Session</span> {
+  id          <span class="type">String</span>        <span class="prop">@id</span> <span class="prop">@default</span>(<span class="fn">cuid</span>())
+  userId      <span class="type">String</span>
+  gameId      <span class="type">String</span>?
+  status      <span class="type">SessionStatus</span> <span class="prop">@default</span>(<span class="val">PENDING</span>)
+  requestedAt <span class="type">DateTime</span>      <span class="prop">@default</span>(<span class="fn">now</span>())
+  startedAt   <span class="type">DateTime</span>?
+  endedAt     <span class="type">DateTime</span>?
+  durationMin <span class="type">Int</span>?                             <span class="comment">// Máx 60 min (Art. 4f)</span>
+  extended    <span class="type">Boolean</span>       <span class="prop">@default</span>(<span class="val">false</span>)    <span class="comment">// Extensão por fila vazia</span>
+  endedBy     <span class="type">String</span>?                           <span class="comment">// "timer"|"staff"|"cadete"</span>
+  staffNote   <span class="type">String</span>?
+  queuePos    <span class="type">Int</span>?                              <span class="comment">// Posição na fila</span>
+
+  user        <span class="type">User</span>          <span class="prop">@relation</span>(<span class="fn">fields</span>: [userId], <span class="fn">references</span>: [id])
+  game        <span class="type">Game</span>?         <span class="prop">@relation</span>(<span class="fn">fields</span>: [gameId], <span class="fn">references</span>: [id])
+  gameResults <span class="type">GameResult</span>[]
+  incident    <span class="type">Incident</span>?
+
+  <span class="prop">@@index</span>([userId])
+  <span class="prop">@@index</span>([status])
+  <span class="prop">@@map</span>(<span class="str">"sessions"</span>)
+}
+
+<span class="kw">model</span> <span class="type">Game</span> {
+  id          <span class="type">String</span>   <span class="prop">@id</span> <span class="prop">@default</span>(<span class="fn">cuid</span>())
+  title       <span class="type">String</span>
+  coverUrl    <span class="type">String</span>?
+  category    <span class="type">String</span>?
+  maxPlayers  <span class="type">Int</span>      <span class="prop">@default</span>(<span class="num">2</span>)
+  isApproved  <span class="type">Boolean</span>  <span class="prop">@default</span>(<span class="val">false</span>)         <span class="comment">// Aprovação staff (Art. 6)</span>
+  approvedById <span class="type">String</span>?
+  format      <span class="type">String</span>?                           <span class="comment">// "physical"|"digital"</span>
+  pegiRating  <span class="type">Int</span>?
+  description <span class="type">String</span>?
+  suggestedById <span class="type">String</span>?
+  createdAt   <span class="type">DateTime</span> <span class="prop">@default</span>(<span class="fn">now</span>())
+
+  approvedBy  <span class="type">User</span>?    <span class="prop">@relation</span>(<span class="str">"GameApprover"</span>, <span class="fn">fields</span>: [approvedById], <span class="fn">references</span>: [id])
+  suggestedBy <span class="type">User</span>?    <span class="prop">@relation</span>(<span class="str">"GameSuggester"</span>, <span class="fn">fields</span>: [suggestedById], <span class="fn">references</span>: [id])
+  sessions    <span class="type">Session</span>[]
+  gameResults <span class="type">GameResult</span>[]
+  tournaments <span class="type">Tournament</span>[]
+
+  <span class="prop">@@map</span>(<span class="str">"games"</span>)
+}
+
+<span class="kw">model</span> <span class="type">GameResult</span> {
+  id           <span class="type">String</span>    <span class="prop">@id</span> <span class="prop">@default</span>(<span class="fn">cuid</span>())
+  sessionId    <span class="type">String</span>
+  gameId       <span class="type">String</span>
+  winnerId     <span class="type">String</span>?
+  participants <span class="type">String</span>[]                        <span class="comment">// Array de user IDs</span>
+  scoreData    <span class="type">Json</span>?                            <span class="comment">// Dados flexíveis do score</span>
+  matchType    <span class="type">MatchType</span> <span class="prop">@default</span>(<span class="val">CASUAL</span>)
+  verified     <span class="type">Boolean</span>   <span class="prop">@default</span>(<span class="val">false</span>)
+  tournamentId <span class="type">String</span>?
+  createdAt    <span class="type">DateTime</span>  <span class="prop">@default</span>(<span class="fn">now</span>())
+
+  session    <span class="type">Session</span>     <span class="prop">@relation</span>(<span class="fn">fields</span>: [sessionId], <span class="fn">references</span>: [id])
+  game       <span class="type">Game</span>        <span class="prop">@relation</span>(<span class="fn">fields</span>: [gameId], <span class="fn">references</span>: [id])
+  winner     <span class="type">User</span>?       <span class="prop">@relation</span>(<span class="fn">fields</span>: [winnerId], <span class="fn">references</span>: [id])
+  tournament <span class="type">Tournament</span>? <span class="prop">@relation</span>(<span class="fn">fields</span>: [tournamentId], <span class="fn">references</span>: [id])
+
+  <span class="prop">@@map</span>(<span class="str">"game_results"</span>)
+}
+
+<span class="kw">model</span> <span class="type">Tournament</span> {
+  id              <span class="type">String</span>           <span class="prop">@id</span> <span class="prop">@default</span>(<span class="fn">cuid</span>())
+  name            <span class="type">String</span>
+  gameId          <span class="type">String</span>
+  createdById     <span class="type">String</span>
+  status          <span class="type">TournamentStatus</span> <span class="prop">@default</span>(<span class="val">DRAFT</span>)
+  maxParticipants <span class="type">Int</span>              <span class="prop">@default</span>(<span class="num">8</span>)
+  bracketData     <span class="type">Json</span>?
+  winnerId        <span class="type">String</span>?
+  startsAt        <span class="type">DateTime</span>?
+  endsAt          <span class="type">DateTime</span>?
+  createdAt       <span class="type">DateTime</span>         <span class="prop">@default</span>(<span class="fn">now</span>())
+
+  game        <span class="type">Game</span>         <span class="prop">@relation</span>(<span class="fn">fields</span>: [gameId], <span class="fn">references</span>: [id])
+  createdBy   <span class="type">User</span>         <span class="prop">@relation</span>(<span class="str">"TournamentCreator"</span>, <span class="fn">fields</span>: [createdById], <span class="fn">references</span>: [id])
+  winner      <span class="type">User</span>?        <span class="prop">@relation</span>(<span class="str">"TournamentWinner"</span>, <span class="fn">fields</span>: [winnerId], <span class="fn">references</span>: [id])
+  gameResults <span class="type">GameResult</span>[]
+
+  <span class="prop">@@map</span>(<span class="str">"tournaments"</span>)
+}
+
+<span class="kw">model</span> <span class="type">DisciplinaryRecord</span> {
+  id              <span class="type">String</span>           <span class="prop">@id</span> <span class="prop">@default</span>(<span class="fn">cuid</span>())
+  userId          <span class="type">String</span>
+  type            <span class="type">DisciplinaryType</span>
+  reason          <span class="type">String</span>
+  articleViolated <span class="type">String</span>?                       <span class="comment">// Ex: "Art. 6c", "Art. 4d"</span>
+  issuedById      <span class="type">String</span>
+  validUntil      <span class="type">DateTime</span>?
+  isActive        <span class="type">Boolean</span>          <span class="prop">@default</span>(<span class="val">true</span>)
+  councilApproved <span class="type">Boolean</span>          <span class="prop">@default</span>(<span class="val">false</span>) <span class="comment">// Conselho Pedagógico (Art. 9)</span>
+  notes           <span class="type">String</span>?
+  createdAt       <span class="type">DateTime</span>         <span class="prop">@default</span>(<span class="fn">now</span>())
+
+  user     <span class="type">User</span> <span class="prop">@relation</span>(<span class="str">"DisciplinarySubject"</span>, <span class="fn">fields</span>: [userId], <span class="fn">references</span>: [id])
+  issuedBy <span class="type">User</span> <span class="prop">@relation</span>(<span class="str">"DisciplinaryIssuer"</span>, <span class="fn">fields</span>: [issuedById], <span class="fn">references</span>: [id])
+
+  <span class="prop">@@index</span>([userId, isActive])
+  <span class="prop">@@map</span>(<span class="str">"disciplinary_records"</span>)
+}
+
+<span class="kw">model</span> <span class="type">Report</span> {
+  id             <span class="type">String</span>         <span class="prop">@id</span> <span class="prop">@default</span>(<span class="fn">cuid</span>())
+  reporterId     <span class="type">String</span>?                         <span class="comment">// null = anónimo (Art. 8)</span>
+  reportedUserId <span class="type">String</span>?
+  category       <span class="type">ReportCategory</span>
+  description    <span class="type">String</span>
+  evidenceUrls   <span class="type">String</span>[]
+  status         <span class="type">ReportStatus</span>   <span class="prop">@default</span>(<span class="val">OPEN</span>)
+  resolvedById   <span class="type">String</span>?
+  resolutionNote <span class="type">String</span>?
+  isAnonymous    <span class="type">Boolean</span>        <span class="prop">@default</span>(<span class="val">false</span>)
+  createdAt      <span class="type">DateTime</span>       <span class="prop">@default</span>(<span class="fn">now</span>())
+  updatedAt      <span class="type">DateTime</span>       <span class="prop">@updatedAt</span>
+
+  reporter     <span class="type">User</span>? <span class="prop">@relation</span>(<span class="str">"ReportReporter"</span>, <span class="fn">fields</span>: [reporterId], <span class="fn">references</span>: [id])
+  reportedUser <span class="type">User</span>? <span class="prop">@relation</span>(<span class="str">"ReportSubject"</span>, <span class="fn">fields</span>: [reportedUserId], <span class="fn">references</span>: [id])
+
+  <span class="prop">@@map</span>(<span class="str">"reports"</span>)
+}
+
+<span class="kw">model</span> <span class="type">Incident</span> {
+  id            <span class="type">String</span>       <span class="prop">@id</span> <span class="prop">@default</span>(<span class="fn">cuid</span>())
+  sessionId     <span class="type">String</span>?      <span class="prop">@unique</span>
+  responsibleId <span class="type">String</span>?
+  reportedById  <span class="type">String</span>?
+  type          <span class="type">IncidentType</span>
+  description   <span class="type">String</span>
+  photoUrls     <span class="type">String</span>[]
+  repairCost    <span class="type">Decimal</span>?
+  status        <span class="type">String</span>       <span class="prop">@default</span>(<span class="str">"open"</span>)   <span class="comment">// open|in_progress|resolved</span>
+  resolvedAt    <span class="type">DateTime</span>?
+  createdAt     <span class="type">DateTime</span>     <span class="prop">@default</span>(<span class="fn">now</span>())
+
+  session     <span class="type">Session</span>? <span class="prop">@relation</span>(<span class="fn">fields</span>: [sessionId], <span class="fn">references</span>: [id])
+  responsible <span class="type">User</span>?    <span class="prop">@relation</span>(<span class="str">"IncidentResponsible"</span>, <span class="fn">fields</span>: [responsibleId], <span class="fn">references</span>: [id])
+  reportedBy  <span class="type">User</span>?    <span class="prop">@relation</span>(<span class="str">"IncidentReporter"</span>, <span class="fn">fields</span>: [reportedById], <span class="fn">references</span>: [id])
+
+  <span class="prop">@@map</span>(<span class="str">"incidents"</span>)
+}
+
+<span class="kw">model</span> <span class="type">Achievement</span> {
+  id             <span class="type">String</span>             <span class="prop">@id</span> <span class="prop">@default</span>(<span class="fn">cuid</span>())
+  slug           <span class="type">String</span>             <span class="prop">@unique</span>
+  name           <span class="type">String</span>
+  description    <span class="type">String</span>
+  icon           <span class="type">String</span>
+  category       <span class="type">String</span>                              <span class="comment">// gaming|social|academic|special</span>
+  conditionType  <span class="type">String</span>                              <span class="comment">// sessions_count|hours_played|etc</span>
+  conditionValue <span class="type">Int</span>
+  rarity         <span class="type">AchievementRarity</span>  <span class="prop">@default</span>(<span class="val">COMMON</span>)
+
+  userAchievements <span class="type">UserAchievement</span>[]
+
+  <span class="prop">@@map</span>(<span class="str">"achievements"</span>)
+}
+
+<span class="kw">model</span> <span class="type">UserAchievement</span> {
+  id            <span class="type">String</span>   <span class="prop">@id</span> <span class="prop">@default</span>(<span class="fn">cuid</span>())
+  userId        <span class="type">String</span>
+  achievementId <span class="type">String</span>
+  unlockedAt    <span class="type">DateTime</span> <span class="prop">@default</span>(<span class="fn">now</span>())
+
+  user        <span class="type">User</span>        <span class="prop">@relation</span>(<span class="fn">fields</span>: [userId], <span class="fn">references</span>: [id])
+  achievement <span class="type">Achievement</span> <span class="prop">@relation</span>(<span class="fn">fields</span>: [achievementId], <span class="fn">references</span>: [id])
+
+  <span class="prop">@@unique</span>([userId, achievementId])
+  <span class="prop">@@map</span>(<span class="str">"user_achievements"</span>)
+}
+
+<span class="kw">model</span> <span class="type">Notification</span> {
+  id        <span class="type">String</span>   <span class="prop">@id</span> <span class="prop">@default</span>(<span class="fn">cuid</span>())
+  userId    <span class="type">String</span>
+  type      <span class="type">String</span>                           <span class="comment">// queue|session|discipline|achievement</span>
+  title     <span class="type">String</span>
+  body      <span class="type">String</span>
+  actionUrl <span class="type">String</span>?
+  isRead    <span class="type">Boolean</span>  <span class="prop">@default</span>(<span class="val">false</span>)
+  createdAt <span class="type">DateTime</span> <span class="prop">@default</span>(<span class="fn">now</span>())
+
+  user <span class="type">User</span> <span class="prop">@relation</span>(<span class="fn">fields</span>: [userId], <span class="fn">references</span>: [id])
+
+  <span class="prop">@@index</span>([userId, isRead])
+  <span class="prop">@@map</span>(<span class="str">"notifications"</span>)
+}
+
+<span class="kw">model</span> <span class="type">AuditLog</span> {
+  id         <span class="type">String</span>   <span class="prop">@id</span> <span class="prop">@default</span>(<span class="fn">cuid</span>())
+  actorId    <span class="type">String</span>?
+  action     <span class="type">String</span>                          <span class="comment">// Ex: SESSION_APPROVED, USER_BLOCKED</span>
+  entityType <span class="type">String</span>                          <span class="comment">// Ex: Session, User, Report</span>
+  entityId   <span class="type">String</span>?
+  beforeData <span class="type">Json</span>?
+  afterData  <span class="type">Json</span>?
+  ipAddress  <span class="type">String</span>?
+  createdAt  <span class="type">DateTime</span> <span class="prop">@default</span>(<span class="fn">now</span>())
+
+  actor <span class="type">User</span>? <span class="prop">@relation</span>(<span class="fn">fields</span>: [actorId], <span class="fn">references</span>: [id])
+
+  <span class="prop">@@index</span>([entityType, entityId])
+  <span class="prop">@@map</span>(<span class="str">"audit_logs"</span>)
+}
+
+<span class="kw">model</span> <span class="type">SystemConfig</span> {
+  id          <span class="type">String</span>   <span class="prop">@id</span> <span class="prop">@default</span>(<span class="fn">cuid</span>())
+  key         <span class="type">String</span>   <span class="prop">@unique</span>
+  value       <span class="type">Json</span>
+  description <span class="type">String</span>?
+  updatedById <span class="type">String</span>?
+  updatedAt   <span class="type">DateTime</span> <span class="prop">@updatedAt</span>
+
+  <span class="prop">@@map</span>(<span class="str">"system_config"</span>)
+}</div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">6.2 — Executar a migração</div>
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-label">TERMINAL</span><button class="cmd-copy" onclick="copyCmd(this, 'npx prisma migrate dev --name init')">copiar</button></div>
+      <div class="cmd-body"><span class="cmd">npx prisma migrate dev</span> <span class="flag">--name</span> <span class="str">init</span>
+
+<span class="output"># Deves ver:
+# ✔ Generated Prisma Client
+# ✔ Applying migration `20250816_init`
+# Your database is now in sync with your schema.</span></div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">6.3 — Visualizar no Prisma Studio (opcional)</div>
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-label">TERMINAL</span><button class="cmd-copy" onclick="copyCmd(this, 'npx prisma studio')">copiar</button></div>
+      <div class="cmd-body"><span class="cmd">npx prisma studio</span>
+<span class="output"># Abre http://localhost:5555
+# Interface visual de todas as tabelas</span></div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">✅ Checklist do Passo 06</div>
+    <ul class="checklist">
+      <li><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-text">Schema completo copiado para prisma/schema.prisma</span></li>
+      <li><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-text">npx prisma migrate dev --name init executado com sucesso</span></li>
+      <li><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-text">12 tabelas visíveis no Supabase ou Prisma Studio</span></li>
+    </ul>
+  </div>
+
+  <div class="step-nav">
+    <button class="btn btn-secondary" onclick="goTo('step5')">← Passo 05</button>
+    <button class="btn btn-primary" onclick="goTo('step7')">Passo 07 →</button>
+  </div>
+</div>
+
+<!-- ──────── STEP 7: 42 OAUTH ──────── -->
+<div class="step-section" id="s-step7">
+  <div class="step-header">
+    <div class="step-meta">
+      <span class="step-badge badge-auth">AUTH</span>
+      <span class="step-num-label">PASSO 07 DE 11</span>
+    </div>
+    <div class="step-title">Registar App na <em>42 Intra</em></div>
+    <p class="step-desc">Vamos registar a aplicação PS42 na plataforma 42 Intra para obter/confirmar as credenciais OAuth2.</p>
+    <div class="step-time">~10 minutos</div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">7.1 — Aceder às configurações da aplicação</div>
+    <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:20px;font-size:13px;line-height:2.4;">
+      <div>1. Acede a <strong style="color:var(--teal)">profile.intra.42.fr/oauth/applications</strong></div>
+      <div>2. Clica em <strong style="color:var(--white)">"New Application"</strong> (ou edita a existente)</div>
+      <div>3. Preenche os campos:</div>
+      <div style="margin-left:24px;font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--surface3);padding:12px 16px;border-radius:4px;margin-top:8px;line-height:2.2;">
+        <div><span style="color:var(--muted)">Name:</span> <span style="color:var(--orange)">PS42 Luanda</span></div>
+        <div><span style="color:var(--muted)">Redirect URI:</span> <span style="color:var(--teal)">http://localhost:3000/api/auth/callback/42-school</span></div>
+        <div><span style="color:var(--muted)">Scopes:</span> <span style="color:var(--teal)">public</span> (apenas este)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">7.2 — URIs de callback necessárias</div>
+    <div class="info-box info">
+      <div class="info-label">ℹ️ Múltiplos ambientes</div>
+      Adiciona ambas as URIs — uma para desenvolvimento local e outra para quando fizeres deploy no Vercel. Podes adicionar mais tarde.
+    </div>
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-label">REDIRECT URIs</span></div>
+      <div class="cmd-body"><span class="comment"># Desenvolvimento local</span>
+<span class="str">http://localhost:3000/api/auth/callback/42-school</span>
+
+<span class="comment"># Produção (adicionar depois do deploy Vercel)</span>
+<span class="str">https://ps42-luanda.vercel.app/api/auth/callback/42-school</span></div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">7.3 — Copiar as credenciais</div>
+    <p style="font-size:14px;color:var(--secondary);margin-bottom:12px;">Após criar/editar a aplicação, copia os valores para o <code style="font-family:'JetBrains Mono',monospace;color:var(--teal)">.env.local</code>:</p>
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-label">.ENV.LOCAL — ACTUALIZAR</span></div>
+      <div class="cmd-body"><span class="prop">FORTY_TWO_CLIENT_ID</span>=<span class="str">"u-s4t2ud-[o-teu-client-id-aqui]"</span>
+<span class="prop">FORTY_TWO_CLIENT_SECRET</span>=<span class="str">"s-s4t2ud-[o-teu-secret-aqui]"</span></div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">✅ Checklist do Passo 07</div>
+    <ul class="checklist">
+      <li><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-text">Aplicação criada/confirmada na 42 Intra</span></li>
+      <li><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-text">Redirect URI de localhost adicionada</span></li>
+      <li><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-text">FORTY_TWO_CLIENT_ID e CLIENT_SECRET no .env.local</span></li>
+    </ul>
+  </div>
+
+  <div class="step-nav">
+    <button class="btn btn-secondary" onclick="goTo('step6')">← Passo 06</button>
+    <button class="btn btn-primary" onclick="goTo('step8')">Passo 08 →</button>
+  </div>
+</div>
+
+<!-- ──────── STEP 8: NEXTAUTH ──────── -->
+<div class="step-section" id="s-step8">
+  <div class="step-header">
+    <div class="step-meta">
+      <span class="step-badge badge-auth">AUTH</span>
+      <span class="step-num-label">PASSO 08 DE 11</span>
+    </div>
+    <div class="step-title">Configurar <em>NextAuth.js</em></div>
+    <p class="step-desc">Vamos configurar o NextAuth.js com o provider da 42 Intra, o Prisma Adapter e a lógica de criação/actualização de utilizadores.</p>
+    <div class="step-time">~20 minutos</div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">8.1 — Configuração principal do NextAuth</div>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-filename">lib/auth.ts</span>
+        <span class="code-lang">TYPESCRIPT</span>
+      </div>
+      <div class="code-body"><span class="kw">import</span> NextAuth <span class="kw">from</span> <span class="str">'next-auth'</span>
+<span class="kw">import</span> { PrismaAdapter } <span class="kw">from</span> <span class="str">'@auth/prisma-adapter'</span>
+<span class="kw">import</span> { prisma } <span class="kw">from</span> <span class="str">'@/lib/prisma'</span>
+
+<span class="kw">export const</span> { handlers, auth, signIn, signOut } = <span class="fn">NextAuth</span>({
+  adapter: <span class="fn">PrismaAdapter</span>(prisma),
+
+  providers: [
+    {
+      id: <span class="str">'42-school'</span>,
+      name: <span class="str">'42 Intra'</span>,
+      type: <span class="str">'oauth'</span>,
+      clientId: <span class="fn">process</span>.env.<span class="prop">FORTY_TWO_CLIENT_ID</span>,
+      clientSecret: <span class="fn">process</span>.env.<span class="prop">FORTY_TWO_CLIENT_SECRET</span>,
+      authorization: {
+        url: <span class="str">'https://api.intra.42.fr/oauth/authorize'</span>,
+        params: { scope: <span class="str">'public'</span> },
+      },
+      token: <span class="str">'https://api.intra.42.fr/oauth/token'</span>,
+      userinfo: <span class="str">'https://api.intra.42.fr/v2/me'</span>,
+      <span class="fn">profile</span>(profile) {
+        <span class="kw">return</span> {
+          id: <span class="fn">String</span>(profile.id),
+          intraId: profile.id,
+          login: profile.login,
+          name: profile.displayname || profile.login,
+          email: profile.email,
+          image: profile.image?.link || <span class="kw">null</span>,
+        }
+      },
+    },
+  ],
+
+  callbacks: {
+    <span class="kw">async</span> <span class="fn">signIn</span>({ user, account, profile }) {
+      <span class="kw">if</span> (!profile || !account) <span class="kw">return false</span>
+
+      <span class="comment">// Criar ou actualizar o utilizador na nossa DB</span>
+      <span class="kw">await</span> prisma.user.<span class="fn">upsert</span>({
+        where: { intraId: profile.id <span class="kw">as</span> <span class="type">number</span> },
+        update: {
+          displayName: profile.displayname <span class="kw">as</span> <span class="type">string</span>,
+          email: profile.email <span class="kw">as</span> <span class="type">string</span>,
+          avatarUrl: (profile.image <span class="kw">as any</span>)?.link,
+          intraLevel: (profile.cursus_users <span class="kw">as any</span>)?.[<span class="num">0</span>]?.level || <span class="num">0</span>,
+          lastSyncAt: <span class="kw">new</span> <span class="fn">Date</span>(),
+        },
+        create: {
+          intraId: profile.id <span class="kw">as</span> <span class="type">number</span>,
+          login: profile.login <span class="kw">as</span> <span class="type">string</span>,
+          displayName: profile.displayname <span class="kw">as</span> <span class="type">string</span>,
+          email: profile.email <span class="kw">as</span> <span class="type">string</span>,
+          avatarUrl: (profile.image <span class="kw">as any</span>)?.link,
+          role: <span class="str">'CADETE'</span>,
+          lastSyncAt: <span class="kw">new</span> <span class="fn">Date</span>(),
+        },
+      })
+
+      <span class="kw">return true</span>
+    },
+
+    <span class="kw">async</span> <span class="fn">session</span>({ session, token }) {
+      <span class="kw">if</span> (session.user) {
+        <span class="kw">const</span> dbUser = <span class="kw">await</span> prisma.user.<span class="fn">findUnique</span>({
+          where: { email: session.user.email! },
+          select: { id: <span class="val">true</span>, role: <span class="val">true</span>, login: <span class="val">true</span>, isEligible: <span class="val">true</span>, isBlocked: <span class="val">true</span> },
+        })
+        <span class="kw">if</span> (dbUser) {
+          session.user.id = dbUser.id
+          session.user.role = dbUser.role
+          session.user.login = dbUser.login
+          session.user.isEligible = dbUser.isEligible
+          session.user.isBlocked = dbUser.isBlocked
+        }
+      }
+      <span class="kw">return</span> session
+    },
+  },
+
+  pages: {
+    signIn: <span class="str">'/login'</span>,
+    error: <span class="str">'/login'</span>,
+  },
+})</div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">8.2 — API Route do NextAuth</div>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-filename">app/api/auth/[...nextauth]/route.ts</span>
+        <span class="code-lang">TYPESCRIPT</span>
+      </div>
+      <div class="code-body"><span class="kw">export</span> { handlers <span class="kw">as</span> GET, handlers <span class="kw">as</span> POST } <span class="kw">from</span> <span class="str">'@/lib/auth'</span></div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">8.3 — Extender os tipos da sessão</div>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-filename">types/index.ts</span>
+        <span class="code-lang">TYPESCRIPT</span>
+      </div>
+      <div class="code-body"><span class="kw">import</span> { DefaultSession } <span class="kw">from</span> <span class="str">'next-auth'</span>
+
+<span class="kw">declare module</span> <span class="str">'next-auth'</span> {
+  <span class="kw">interface</span> <span class="type">Session</span> {
+    user: {
+      id: <span class="type">string</span>
+      login: <span class="type">string</span>
+      role: <span class="str">'CADETE'</span> | <span class="str">'STAFF'</span> | <span class="str">'ADMIN'</span>
+      isEligible: <span class="type">boolean</span>
+      isBlocked: <span class="type">boolean</span>
+    } & DefaultSession[<span class="str">'user'</span>]
+  }
+}</div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">✅ Checklist do Passo 08</div>
+    <ul class="checklist">
+      <li><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-text">lib/auth.ts criado com o provider 42-school</span></li>
+      <li><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-text">app/api/auth/[...nextauth]/route.ts criado</span></li>
+      <li><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-text">types/index.ts com os tipos da sessão extendidos</span></li>
+    </ul>
+  </div>
+
+  <div class="step-nav">
+    <button class="btn btn-secondary" onclick="goTo('step7')">← Passo 07</button>
+    <button class="btn btn-primary" onclick="goTo('step9')">Passo 09 →</button>
+  </div>
+</div>
+
+<!-- ──────── STEP 9: DESIGN SYSTEM ──────── -->
+<div class="step-section" id="s-step9">
+  <div class="step-header">
+    <div class="step-meta">
+      <span class="step-badge badge-code">DESIGN</span>
+      <span class="step-num-label">PASSO 09 DE 11</span>
+    </div>
+    <div class="step-title"><em>Design System</em> Base</div>
+    <p class="step-desc">Definir as cores, tipografia e CSS variables do PS42 Luanda. Uma identidade visual forte e consistente.</p>
+    <div class="step-time">~25 minutos</div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">9.1 — Paleta de cores e globals.css</div>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-filename">app/globals.css</span>
+        <span class="code-lang">CSS</span>
+      </div>
+      <div class="code-body"><span class="prop">@import url</span>(<span class="str">'https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=JetBrains+Mono:wght@400;500;700&display=swap'</span>);
+
+<span class="prop">@tailwind base</span>;
+<span class="prop">@tailwind components</span>;
+<span class="prop">@tailwind utilities</span>;
+
+<span class="prop">@layer base</span> {
+  :root {
+    <span class="comment">/* ── Cores base PS42 Luanda ── */</span>
+    --bg:            <span class="num">10 12 16</span>;
+    --surface:       <span class="num">16 20 26</span>;
+    --surface-2:     <span class="num">22 28 36</span>;
+    --surface-3:     <span class="num">30 38 48</span>;
+    --border:        <span class="num">36 46 60</span>;
+
+    <span class="comment">/* ── Marca 42 / PS42 ── */</span>
+    --teal:          <span class="num">0 212 170</span>;
+    --teal-dim:      <span class="num">0 212 170 / 0.08</span>;
+    --blue-42:       <span class="num">59 158 255</span>;
+    --red-42:        <span class="num">230 51 41</span>;
+    --gold:          <span class="num">245 166 35</span>;
+
+    <span class="comment">/* ── Texto ── */</span>
+    --foreground:    <span class="num">232 237 242</span>;
+    --muted:         <span class="num">74 90 106</span>;
+    --muted-fg:      <span class="num">122 143 160</span>;
+
+    <span class="comment">/* ── Status ── */</span>
+    --success:       <span class="num">46 204 113</span>;
+    --warning:       <span class="num">255 140 66</span>;
+    --danger:        <span class="num">255 71 87</span>;
+
+    <span class="comment">/* ── shadcn/ui mapping ── */</span>
+    --background:    <span class="num">10 12 16</span>;
+    --card:          <span class="num">16 20 26</span>;
+    --primary:       <span class="num">0 212 170</span>;
+    --primary-foreground: <span class="num">10 12 16</span>;
+    --secondary:     <span class="num">22 28 36</span>;
+    --secondary-foreground: <span class="num">232 237 242</span>;
+    --accent:        <span class="num">30 38 48</span>;
+    --accent-foreground: <span class="num">232 237 242</span>;
+    --radius:        <span class="num">0.25rem</span>;
+  }
+}
+
+<span class="prop">@layer base</span> {
+  * { <span class="prop">@apply border-border</span>; }
+
+  body {
+    <span class="prop">@apply</span> bg-[rgb(var(--bg))] text-[rgb(var(--foreground))];
+    <span class="prop">font-family</span>: <span class="str">'DM Sans'</span>, sans-serif;
+    <span class="prop">-webkit-font-smoothing</span>: antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    <span class="prop">font-family</span>: <span class="str">'Syne'</span>, sans-serif;
+    <span class="prop">font-weight</span>: <span class="num">700</span>;
+    <span class="prop">letter-spacing</span>: -<span class="num">0.03em</span>;
+  }
+
+  code, pre, kbd {
+    <span class="prop">font-family</span>: <span class="str">'JetBrains Mono'</span>, monospace;
+  }
+
+  <span class="comment">/* Scrollbar custom */</span>
+  ::-webkit-scrollbar { <span class="prop">width</span>: <span class="num">4px</span>; <span class="prop">height</span>: <span class="num">4px</span>; }
+  ::-webkit-scrollbar-track { <span class="prop">background</span>: rgb(var(--bg)); }
+  ::-webkit-scrollbar-thumb { <span class="prop">background</span>: rgb(var(--border)); <span class="prop">border-radius</span>: <span class="num">2px</span>; }
+}</div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">9.2 — Actualizar tailwind.config.ts</div>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-filename">tailwind.config.ts</span>
+        <span class="code-lang">TYPESCRIPT</span>
+      </div>
+      <div class="code-body"><span class="kw">import type</span> { Config } <span class="kw">from</span> <span class="str">'tailwindcss'</span>
+
+<span class="kw">const</span> config: Config = {
+  darkMode: [<span class="str">'class'</span>],
+  content: [
+    <span class="str">'./pages/**/*.{ts,tsx}'</span>,
+    <span class="str">'./components/**/*.{ts,tsx}'</span>,
+    <span class="str">'./app/**/*.{ts,tsx}'</span>,
+  ],
+  theme: {
+    extend: {
+      fontFamily: {
+        sans: [<span class="str">'DM Sans'</span>, <span class="str">'sans-serif'</span>],
+        display: [<span class="str">'Syne'</span>, <span class="str">'sans-serif'</span>],
+        mono: [<span class="str">'JetBrains Mono'</span>, <span class="str">'monospace'</span>],
+      },
+      colors: {
+        teal: {
+          DEFAULT: <span class="str">'rgb(var(--teal) / &lt;alpha-value&gt;)'</span>,
+          dim: <span class="str">'rgb(var(--teal-dim))'</span>,
+        },
+        surface: {
+          DEFAULT: <span class="str">'rgb(var(--surface) / &lt;alpha-value&gt;)'</span>,
+          <span class="num">2</span>: <span class="str">'rgb(var(--surface-2) / &lt;alpha-value&gt;)'</span>,
+          <span class="num">3</span>: <span class="str">'rgb(var(--surface-3) / &lt;alpha-value&gt;)'</span>,
+        },
+      },
+      borderRadius: {
+        lg: <span class="str">'var(--radius)'</span>,
+        md: <span class="str">'calc(var(--radius) - 2px)'</span>,
+        sm: <span class="str">'calc(var(--radius) - 4px)'</span>,
+      },
+    },
+  },
+  plugins: [require(<span class="str">'tailwindcss-animate'</span>)],
+}
+
+<span class="kw">export default</span> config</div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">✅ Checklist do Passo 09</div>
+    <ul class="checklist">
+      <li><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-text">globals.css atualizado com CSS variables PS42</span></li>
+      <li><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-text">tailwind.config.ts atualizado com fontes e cores custom</span></li>
+    </ul>
+  </div>
+
+  <div class="step-nav">
+    <button class="btn btn-secondary" onclick="goTo('step8')">← Passo 08</button>
+    <button class="btn btn-primary" onclick="goTo('step10')">Passo 10 →</button>
+  </div>
+</div>
+
+<!-- ──────── STEP 10: LAYOUT + MIDDLEWARE ──────── -->
+<div class="step-section" id="s-step10">
+  <div class="step-header">
+    <div class="step-meta">
+      <span class="step-badge badge-code">CODE</span>
+      <span class="step-num-label">PASSO 10 DE 11</span>
+    </div>
+    <div class="step-title">Layout + <em>Middleware</em></div>
+    <p class="step-desc">Criar o Root Layout, a página de login, e o middleware que protege todas as rotas privadas.</p>
+    <div class="step-time">~20 minutos</div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">10.1 — Root Layout</div>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-filename">app/layout.tsx</span>
+        <span class="code-lang">TYPESCRIPT</span>
+      </div>
+      <div class="code-body"><span class="kw">import type</span> { Metadata } <span class="kw">from</span> <span class="str">'next'</span>
+<span class="kw">import</span> <span class="str">'./globals.css'</span>
+
+<span class="kw">export const</span> metadata: Metadata = {
+  title: <span class="str">'PS42 Luanda — Sistema de Gestão PlayStation'</span>,
+  description: <span class="str">'Plataforma oficial de gestão da PlayStation da 42 Luanda'</span>,
+}
+
+<span class="kw">export default function</span> <span class="fn">RootLayout</span>({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  <span class="kw">return</span> (
+    &lt;<span class="fn">html</span> lang=<span class="str">"pt"</span> className=<span class="str">"dark"</span>&gt;
+      &lt;<span class="fn">body</span> className=<span class="str">"min-h-screen bg-[rgb(var(--bg))] antialiased"</span>&gt;
+        {children}
+      &lt;/<span class="fn">body</span>&gt;
+    &lt;/<span class="fn">html</span>&gt;
+  )
+}</div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">10.2 — Middleware de protecção de rotas</div>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-filename">middleware.ts</span>
+        <span class="code-lang">TYPESCRIPT</span>
+      </div>
+      <div class="code-body"><span class="kw">import</span> { auth } <span class="kw">from</span> <span class="str">'@/lib/auth'</span>
+<span class="kw">import</span> { NextResponse } <span class="kw">from</span> <span class="str">'next/server'</span>
+
+<span class="kw">export default</span> <span class="fn">auth</span>((req) => {
+  <span class="kw">const</span> { nextUrl, auth: session } = req
+  <span class="kw">const</span> isLoggedIn = !!session?.user
+
+  <span class="kw">const</span> isPublicRoute = [<span class="str">'/'</span>, <span class="str">'/login'</span>].<span class="fn">includes</span>(nextUrl.pathname)
+  <span class="kw">const</span> isStaffRoute = nextUrl.pathname.<span class="fn">startsWith</span>(<span class="str">'/staff'</span>)
+  <span class="kw">const</span> isApiAuthRoute = nextUrl.pathname.<span class="fn">startsWith</span>(<span class="str">'/api/auth'</span>)
+
+  <span class="comment">// Permitir rotas públicas e auth API sempre</span>
+  <span class="kw">if</span> (isApiAuthRoute || isPublicRoute) <span class="kw">return</span> NextResponse.<span class="fn">next</span>()
+
+  <span class="comment">// Redirecionar para login se não autenticado</span>
+  <span class="kw">if</span> (!isLoggedIn) {
+    <span class="kw">return</span> NextResponse.<span class="fn">redirect</span>(<span class="kw">new</span> <span class="fn">URL</span>(<span class="str">'/login'</span>, nextUrl))
+  }
+
+  <span class="comment">// Proteger rotas /staff — apenas STAFF e ADMIN</span>
+  <span class="kw">if</span> (isStaffRoute) {
+    <span class="kw">const</span> role = session?.user?.role
+    <span class="kw">if</span> (role !== <span class="str">'STAFF'</span> && role !== <span class="str">'ADMIN'</span>) {
+      <span class="kw">return</span> NextResponse.<span class="fn">redirect</span>(<span class="kw">new</span> <span class="fn">URL</span>(<span class="str">'/dashboard'</span>, nextUrl))
+    }
+  }
+
+  <span class="kw">return</span> NextResponse.<span class="fn">next</span>()
+})
+
+<span class="kw">export const</span> config = {
+  matcher: [<span class="str">'/((?!_next/static|_next/image|favicon.ico).*)'],</span>
+}</div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">10.3 — Página de Login</div>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-filename">app/(auth)/login/page.tsx</span>
+        <span class="code-lang">TYPESCRIPT</span>
+      </div>
+      <div class="code-body"><span class="kw">import</span> { signIn } <span class="kw">from</span> <span class="str">'@/lib/auth'</span>
+
+<span class="kw">export default function</span> <span class="fn">LoginPage</span>() {
+  <span class="kw">return</span> (
+    &lt;<span class="fn">div</span> className=<span class="str">"min-h-screen flex items-center justify-center bg-[rgb(var(--bg))]"</span>&gt;
+      &lt;<span class="fn">div</span> className=<span class="str">"text-center space-y-8 p-8"</span>&gt;
+        &lt;<span class="fn">div</span>&gt;
+          &lt;<span class="fn">h1</span> className=<span class="str">"font-display text-5xl font-black tracking-tight"</span>&gt;
+            &lt;<span class="fn">span</span> className=<span class="str">"text-teal-400"</span>&gt;PS42&lt;/<span class="fn">span</span>&gt; Luanda
+          &lt;/<span class="fn">h1</span>&gt;
+          &lt;<span class="fn">p</span> className=<span class="str">"text-[rgb(var(--muted-fg))] mt-3"</span>&gt;
+            Zona de Descompressão · 42 Luanda
+          &lt;/<span class="fn">p</span>&gt;
+        &lt;/<span class="fn">div</span>&gt;
+
+        &lt;<span class="fn">form</span>
+          action={<span class="kw">async</span> () => {
+            <span class="str">'use server'</span>
+            <span class="kw">await</span> <span class="fn">signIn</span>(<span class="str">'42-school'</span>, { redirectTo: <span class="str">'/dashboard'</span> })
+          }}
+        &gt;
+          &lt;<span class="fn">button</span>
+            type=<span class="str">"submit"</span>
+            className=<span class="str">"bg-teal-400 text-[rgb(var(--bg))] font-bold px-8 py-4
+                       font-mono text-sm tracking-wider hover:bg-teal-300
+                       transition-colors w-full max-w-xs"</span>
+          &gt;
+            ENTRAR COM A CONTA 42 →
+          &lt;/<span class="fn">button</span>&gt;
+        &lt;/<span class="fn">form</span>&gt;
+      &lt;/<span class="fn">div</span>&gt;
+    &lt;/<span class="fn">div</span>&gt;
+  )
+}</div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">✅ Checklist do Passo 10</div>
+    <ul class="checklist">
+      <li><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-text">app/layout.tsx criado</span></li>
+      <li><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-text">middleware.ts criado com protecção de rotas</span></li>
+      <li><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-text">Página de login criada em app/(auth)/login/page.tsx</span></li>
+    </ul>
+  </div>
+
+  <div class="step-nav">
+    <button class="btn btn-secondary" onclick="goTo('step9')">← Passo 09</button>
+    <button class="btn btn-primary" onclick="goTo('step11')">Passo 11 →</button>
+  </div>
+</div>
+
+<!-- ──────── STEP 11: TEST + COMMIT ──────── -->
+<div class="step-section" id="s-step11">
+  <div class="step-header">
+    <div class="step-meta">
+      <span class="step-badge badge-setup">FINISH</span>
+      <span class="step-num-label">PASSO 11 DE 11</span>
+    </div>
+    <div class="step-title">Testar + Primeiro <em>Commit</em></div>
+    <p class="step-desc">Testar o login com a 42 Intra e fazer o primeiro commit no GitHub. A Fase 1 está quase concluída!</p>
+    <div class="step-time">~15 minutos</div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">11.1 — Testar o login</div>
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-label">TERMINAL</span><button class="cmd-copy" onclick="copyCmd(this, 'npm run dev')">copiar</button></div>
+      <div class="cmd-body"><span class="cmd">npm run dev</span></div>
+    </div>
+    <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:20px;font-size:13px;line-height:2.4;margin-top:12px;">
+      <div>1. Abre <strong style="color:var(--teal)">http://localhost:3000/login</strong></div>
+      <div>2. Clica em <strong style="color:var(--white)">"ENTRAR COM A CONTA 42"</strong></div>
+      <div>3. Faz login com as tuas credenciais da 42 Intra</div>
+      <div>4. Deves ser redireccionado para <code style="font-family:'JetBrains Mono',monospace;color:var(--teal)">/dashboard</code> (página ainda vazia — é normal)</div>
+      <div>5. Verifica no Supabase → Tabela <code style="font-family:'JetBrains Mono',monospace">users</code> → o teu utilizador deve estar lá!</div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">11.2 — Inicializar Git e primeiro commit</div>
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-label">TERMINAL</span></div>
+      <div class="cmd-body"><span class="comment"># Verificar estado</span>
+<span class="cmd">git status</span>
+
+<span class="comment"># Adicionar todos os ficheiros (excluindo .env.local pelo .gitignore)</span>
+<span class="cmd">git add</span> <span class="str">.</span>
+
+<span class="comment"># Verificar que .env.local NÃO está incluído</span>
+<span class="cmd">git status</span>
+
+<span class="comment"># Primeiro commit</span>
+<span class="cmd">git commit</span> <span class="flag">-m</span> <span class="str">"feat: fase 1 - fundação do PS42 Luanda
+
+- Setup Next.js 14 + TypeScript + Tailwind
+- Estrutura de pastas completa (21 módulos)
+- Prisma schema com 12 tabelas
+- NextAuth.js com 42 Intra OAuth
+- Middleware de protecção de rotas
+- Design system base PS42"</span></div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">11.3 — Push para o GitHub</div>
+    <div class="cmd-block">
+      <div class="cmd-header"><span class="cmd-label">TERMINAL</span></div>
+      <div class="cmd-body"><span class="comment"># Conectar ao repositório GitHub (criar o repo no GitHub primeiro)</span>
+<span class="cmd">git remote add origin</span> <span class="str">https://github.com/[teu-user]/ps42-luanda.git</span>
+
+<span class="comment"># Push</span>
+<span class="cmd">git push</span> <span class="flag">-u origin</span> <span class="str">main</span></div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">🎉 Checklist Final — Fase 1 Completa</div>
+    <ul class="checklist">
+      <li><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-text">Login com conta 42 Intra funciona em localhost:3000</span></li>
+      <li><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-text">Utilizador criado automaticamente na tabela users do Supabase</span></li>
+      <li><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-text">Middleware redireciona não-autenticados para /login</span></li>
+      <li><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-text">Código no GitHub (sem .env.local)</span></li>
+      <li><div class="check-box" onclick="toggleCheck(this)"></div><span class="check-text">12 tabelas criadas no Supabase</span></li>
+    </ul>
+  </div>
+
+  <div class="info-box tip">
+    <div class="info-label">🚀 Fase 1 Concluída!</div>
+    A fundação está sólida. Na <strong>Fase 2</strong> vamos construir o coração do sistema: o motor de elegibilidade automático (Art. 3), a integração completa com a API 42 Intra, o sistema de requisições e a fila em tempo real com Pusher.
+  </div>
+
+  <div class="step-nav">
+    <button class="btn btn-secondary" onclick="goTo('step10')">← Passo 10</button>
+    <button class="btn btn-primary" style="background:var(--gold);border-color:var(--gold);color:#000">🏆 Fase 1 Concluída!</button>
+  </div>
+</div>
+
+</main>
+</div>
+
+<script>
+const steps = ['overview','step1','step2','step3','step4','step5','step6','step7','step8','step9','step10','step11'];
+
+function goTo(name) {
+  document.querySelectorAll('.step-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('s-' + name).classList.add('active');
+
+  const navItems = document.querySelectorAll('.nav-item');
+  navItems.forEach(item => {
+    if (item.getAttribute('onclick')?.includes(name)) {
+      item.classList.add('active');
+    }
+  });
+
+  document.querySelector('.main').scrollTo({ top: 0, behavior: 'smooth' });
+  updateProgress(steps.indexOf(name));
+}
+
+function updateProgress(idx) {
+  const pct = Math.round((idx / (steps.length - 1)) * 100);
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-pct').textContent = pct + '%';
+}
+
+function toggleCheck(el) {
+  el.classList.toggle('checked');
+  if (el.classList.contains('checked')) el.textContent = '✓';
+  else el.textContent = '';
+  el.closest('li').classList.toggle('done', el.classList.contains('checked'));
+}
+
+function copyCmd(btn, text) {
+  // Use the cmd-body content instead if no text passed
+  if (!text) {
+    const body = btn.closest('.cmd-block').querySelector('.cmd-body');
+    text = body.innerText;
+  }
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'copiado ✓';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'copiar'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+</script>
+</body>
+</html>
