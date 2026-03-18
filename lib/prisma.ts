@@ -1,7 +1,8 @@
+// lib/prisma.ts
 /* Evita criar múltiplas instâncias do Prisma em desenvolvimento */
 
-// import { PrismaClient } from '@prisma/client'
-import { PrismaClient } from "./generated/prisma/client";
+import { PrismaClient } from '@prisma/client'
+// import { PrismaClient } from "./generated/prisma/client";
 
 // Verifica se já existe uma instância do Prisma no ambiente global
 const globalForPrisma = globalThis as unknown as {
