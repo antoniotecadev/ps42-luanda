@@ -32,7 +32,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           email: profile.email,
           image: profile.image?.link || null,
           // Adiciona os campos obrigatórios com valores padrão
-          role: "CADETE", // Ou o valor padrão que definiste no Prisma
+          role: profile["staff?"] ? "STAFF" : "STUDENT", // Ou o valor padrão que definiste no Prisma
           isEligible: false, // Valor inicial padrão
           isBlocked: false, // Valor inicial padrão
         };
@@ -71,7 +71,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             displayName: profile.displayname as string,
             email: profile.email as string,
             avatarUrl: (profile.image as any)?.link,
-            role: "CADETE",
+            role: profile["staff?"] as boolean ? "STAFF" : "STUDENT",
             isEligible: false,
             isBlocked: false,
             lastSyncAt: new Date(),
@@ -94,7 +94,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
     // jwt recebe esse 'user' (visitante temporário) apenas no momento da criação do token.
     // user fica undefined depois disso, então é importante salvar tudo o que você precisa no token nesse momento, porque o Middleware só tem acesso ao token e não ao banco de dados.
-    
+
     // user: Vem da função profile() do seu Provider (dados da 42).
     // dbUser: Vem do seu banco de dados (Supabase via Prisma).
     // token: É o resultado final que será encriptado no Cookie.

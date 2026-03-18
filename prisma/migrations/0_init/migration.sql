@@ -1,5 +1,8 @@
+-- CreateSchema
+CREATE SCHEMA IF NOT EXISTS "public";
+
 -- CreateEnum
-CREATE TYPE "Role" AS ENUM ('CADETE', 'STAFF', 'ADMIN');
+CREATE TYPE "Role" AS ENUM ('STUDENT', 'STAFF', 'ADMIN');
 
 -- CreateEnum
 CREATE TYPE "SessionStatus" AS ENUM ('PENDING', 'APPROVED', 'ACTIVE', 'DONE', 'CANCELLED', 'REJECTED');
@@ -33,7 +36,7 @@ CREATE TABLE "users" (
     "displayName" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "avatarUrl" TEXT,
-    "role" "Role" NOT NULL DEFAULT 'CADETE',
+    "role" "Role" NOT NULL DEFAULT 'STUDENT',
     "coalitionName" TEXT,
     "coalitionColor" TEXT,
     "intraLevel" DOUBLE PRECISION NOT NULL DEFAULT 0,
@@ -341,3 +344,4 @@ ALTER TABLE "notifications" ADD CONSTRAINT "notifications_userId_fkey" FOREIGN K
 
 -- AddForeignKey
 ALTER TABLE "audit_logs" ADD CONSTRAINT "audit_logs_actorId_fkey" FOREIGN KEY ("actorId") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+

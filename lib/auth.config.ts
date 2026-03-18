@@ -40,14 +40,14 @@ export const authConfig = {
             // const role = session?.user?.role;
 
             // if (nextUrl.pathname.startsWith("/staff") && role !== "STAFF") {
-            //     // Se for um CADETE tentando entrar no painel staff, manda de volta
+            //     // Se for um STUDENT tentando entrar no painel staff, manda de volta
             //     return Response.redirect(new URL("/dashboard", nextUrl));
             // }
 
             if (isStaffRoute) {
                 const role = session?.user?.role;
                 if (role !== 'STAFF' && role !== 'ADMIN') {
-                    // Redireciona cadete tentando ser staff
+                    // Redireciona student tentando ser staff
                     return Response.redirect(new URL('/dashboard', nextUrl));
                 }
             }

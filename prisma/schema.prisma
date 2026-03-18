@@ -7,6 +7,25 @@
 // Configuração do Prisma ORM para o projeto Next.js
 // Define o cliente Prisma e a conexão com o banco de dados PostgreSQL
 
+// ─── COMANDOS ESSENCIAIS DO PRISMA ───────────────
+// npx prisma generate        → Gera o cliente Prisma (@prisma/client)
+// npx prisma migrate dev      → Cria e aplica migrations localmente
+// npx prisma migrate deploy   → Aplica migrations em produção
+// npx prisma studio          → Abre interface visual de dados
+// npx prisma db push         → Sincroniza schema com BD (sem migrations)
+// npx prisma db pull         → Introspect BD e atualiza schema
+// npx prisma format          → Formata o arquivo schema.prisma
+// npx prisma validate        → Valida erros no schema
+// npx prisma db push --force-reset → Reseta BD e aplica schema (cuidado: apaga dados)
+// npx prisma migrate dev --name init_roles --create-only → Cria migration vazia para customização manual
+// npx prisma init --datasource-provider postgresql → Cria projeto Prisma com datasource PostgreSQL
+// npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > prisma/migrations/0_init/migration.sql - Gera SQL da migration inicial com base no schema actual (útil para controle manual de migrations)
+// npx prisma migrate resolve --applied 0_init - Marca a migration inicial como aplicada (útil após criar manualmente a migration SQL)
+
+// ORdem recomendado para desenvolvimento local:
+// npx prisma migrate dev --name adicionar_campo_bio -> O Prisma compara o teu ficheiro com a base de dados, cria o ficheiro .sql e aplica-o ao Supabase.
+// npx prisma generate -> Gera o cliente Prisma actualizado com as novas mudanças do schema, para que possas usar os novos campos e modelos no teu código TypeScript.
+
 // (O Gerador de Código)
 generator client {
   provider = "prisma-client-js" // Especifica o gerador de código para o cliente Prisma
@@ -26,7 +45,7 @@ datasource db {
 // ─── ENUMS ───────────────────────────────────────
 
 enum Role {
-  CADETE
+  STUDENT
   STAFF
   ADMIN
 }
@@ -36,7 +55,7 @@ enum SessionStatus {
   APPROVED // Aprovado, aguarda levantamento
   ACTIVE // Sessão a decorrer
   DONE // Concluída normalmente
-  CANCELLED // Cancelada pelo cadete ou staff
+  CANCELLED // Cancelada pelo student ou staff
   REJECTED // Rejeitada pelo staff
 }
 
@@ -93,7 +112,7 @@ enum AchievementRarity {
 
 // ─── MODELS ──────────────────────────────────────
 
-// Usuários do sistema, incluindo cadetes, staff e administradores, com informações de perfil, 
+// Usuários do sistema, incluindo students, staff e administradores, com informações de perfil, 
 // status de elegibilidade e bloqueio, e relações com sessões, resultados, torneios, sanções disciplinares, relatórios e notificações
 model User {
   id              String    @id @default(cuid())
@@ -102,7 +121,7 @@ model User {
   displayName     String
   email           String    @unique
   avatarUrl       String?
-  role            Role      @default(CADETE)
+  role            Role      @default(STUDENT)
   coalitionName   String? // Da API 42 Intra
   coalitionColor  String?
   intraLevel      Float     @default(0)
@@ -135,7 +154,7 @@ model User {
   @@map("users")
 }
 
-// Sessões de jogo agendadas e realizadas pelos cadetes
+// Sessões de jogo agendadas e realizadas pelos students
 model Session {
   id          String        @id @default(cuid())
   userId      String
@@ -146,7 +165,7 @@ model Session {
   endedAt     DateTime?
   durationMin Int? // Máx 60 min (Art. 4f)
   extended    Boolean       @default(false) // Extensão por fila vazia
-  endedBy     String? // "timer"|"staff"|"cadete"
+  endedBy     String? // "timer"|"staff"|"student"
   staffNote   String?
   queuePos    Int? // Posição na fila
 
@@ -160,7 +179,7 @@ model Session {
   @@map("sessions")
 }
 
-// Jogos disponíveis para agendamento, sugeridos pelos cadetes e aprovados pelo staff
+// Jogos disponíveis para agendamento, sugeridos pelos students e aprovados pelo staff
 model Game {
   id            String   @id @default(cuid())
   title         String
@@ -205,7 +224,7 @@ model GameResult {
   @@map("game_results")
 }
 
-// Torneios organizados pelos cadetes, com estrutura de chaves flexível para dados de bracket e resultados
+// Torneios organizados pelos students, com estrutura de chaves flexível para dados de bracket e resultados
 model Tournament {
   id              String           @id @default(cuid())
   name            String
@@ -227,7 +246,7 @@ model Tournament {
   @@map("tournaments")
 }
 
-// Registros disciplinares aplicados aos cadetes, com tipos e motivos flexíveis, e relação com o staff que emitiu a sanção
+// Registros disciplinares aplicados aos students, com tipos e motivos flexíveis, e relação com o staff que emitiu a sanção
 model DisciplinaryRecord {
   id              String           @id @default(cuid())
   userId          String
@@ -248,7 +267,7 @@ model DisciplinaryRecord {
   @@map("disciplinary_records")
 }
 
-// Relatórios de incidentes envolvendo cadetes, para monitoramento e ações disciplinares, com categorias e status flexíveis, e possibilidade de anonimato para o denunciante
+// Relatórios de incidentes envolvendo students, para monitoramento e ações disciplinares, com categorias e status flexíveis, e possibilidade de anonimato para o denunciante
 model Report {
   id             String         @id @default(cuid())
   reporterId     String? // null = anónimo (Art. 8)
@@ -291,7 +310,7 @@ model Incident {
   @@map("incidents")
 }
 
-// Conquistas que os cadetes podem desbloquear com base em suas actividades, como número de sessões, horas jogadas, vitórias em torneios, etc., 
+// Conquistas que os students podem desbloquear com base em suas actividades, como número de sessões, horas jogadas, vitórias em torneios, etc., 
 // com categorias e condições flexíveis, e raridade para incentivar a participação
 model Achievement {
   id             String            @id @default(cuid())
@@ -309,7 +328,7 @@ model Achievement {
   @@map("achievements")
 }
 
-// Relação entre usuários e conquistas desbloqueadas, com data de desbloqueio para histórico e exibição no perfil do cadete
+// Relação entre usuários e conquistas desbloqueadas, com data de desbloqueio para histórico e exibição no perfil do student
 model UserAchievement {
   id            String   @id @default(cuid())
   userId        String
@@ -323,7 +342,7 @@ model UserAchievement {
   @@map("user_achievements")
 }
 
-// Notificações para os cadetes, para informar sobre aprovações de sessões, sanções disciplinares, novos jogos disponíveis, etc., 
+// Notificações para os students, para informar sobre aprovações de sessões, sanções disciplinares, novos jogos disponíveis, etc., 
 // com tipos e status flexíveis, e relação com o usuário destinatário
 model Notification {
   id        String   @id @default(cuid())
@@ -372,3 +391,5 @@ model SystemConfig {
 
   @@map("system_config")
 }
+
+
