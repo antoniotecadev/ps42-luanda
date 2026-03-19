@@ -86,7 +86,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
     /**
      * jwt() é o "Escritor" (Lado do Servidor)
-     * O callback jwt só roda em momentos específicos (quando o token é criado ou atualizado).
+     * O callback jwt só roda em momentos específicos (quando o token é criado ou actualizado).
      * Onde ele vive? No cookie criptografado que fica no navegador do usuário.
      * Por que salvar aqui? Porque o Middleware (proxy.ts) só consegue ler o que está dentro do token. 
      * Se você não salvar o role no token, o Middleware nunca saberá que você é um "STAFF" e não conseguirá proteger as rotas sem consultar o banco de dados toda hora.
@@ -95,11 +95,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     // jwt recebe esse 'user' (visitante temporário) apenas no momento da criação do token.
     // user fica undefined depois disso, então é importante salvar tudo o que você precisa no token nesse momento, porque o Middleware só tem acesso ao token e não ao banco de dados.
 
+    // token: É o resultado final que será encriptado no Cookie.
     // user: Vem da função profile() do seu Provider (dados da 42).
     // dbUser: Vem do seu banco de dados (Supabase via Prisma).
-    // token: É o resultado final que será encriptado no Cookie.
+    // account: Contém informações sobre a conta de autenticação, como o tipo de provedor e tokens de acesso.
 
-    async jwt({ token, user }) {
+    async jwt({ token, account, user }) {
       if (user) {
         // Na primeira vez que o JWT é criado, buscamos os dados reais do banco
         const dbUser = await prisma.user.findFirst({
@@ -111,7 +112,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.isEligible = dbUser?.isEligible || user.isEligible;
         token.isBlocked = dbUser?.isBlocked || user.isBlocked;
       }
-      return token;
+      if (account && user) {
+        return {
+          ...token,
+          accessToken: account.access_token,
+          refreshToken: account.refresh_token,
+          expiresAt: account.expires_at ? account.expires_at * 1000 : 0, // Converter para ms
+        }
+      }
+
+      // Se o token ainda não expirou, apenas retorna o token atual
+      if (Date.now() < (token.expiresAt as number)) {
+        return token
+      }
+
+      // SE CHEGOU AQUI, O TOKEN DA INTRA EXPIROU!
+      // Precisamos de pedir um novo à 42 usando o refreshToken
+      return refreshAccessToken(token)
     },
     /**
      * O session() é o "Tradutor" (Interface do Usuário)
@@ -132,6 +149,35 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
 });
+
+async function refreshAccessToken(token: any) {
+  try {
+    const response = await fetch("https://api.intra.42.fr/oauth/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        client_id: process.env.FORTY_TWO_CLIENT_ID!,
+        client_secret: process.env.FORTY_TWO_CLIENT_SECRET!,
+        grant_type: "refresh_token",
+        refresh_token: token.refreshToken,
+      }),
+    })
+
+    const refreshedTokens = await response.json()
+
+    if (!response.ok) throw refreshedTokens
+
+    return {
+      ...token,
+      accessToken: refreshedTokens.access_token,
+      expiresAt: Date.now() + refreshedTokens.expires_in * 1000,
+      refreshToken: refreshedTokens.refresh_token ?? token.refreshToken, // A 42 pode ou não enviar um novo refresh_token
+    }
+  } catch (error) {
+    console.error("Erro ao renovar token da Intra:", error)
+    return { ...token, error: "RefreshAccessTokenError" }
+  }
+}
 
 /*
  * NextAuth Callbacks Reference
