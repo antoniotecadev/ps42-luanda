@@ -112,6 +112,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.isEligible = dbUser?.isEligible || user.isEligible;
         token.isBlocked = dbUser?.isBlocked || user.isBlocked;
       }
+
+      if (account?.access_token) {
+        token.accessToken = account.access_token;
+      }
+
       if (account && user) {
         return {
           ...token,
@@ -144,6 +149,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.login = token.login as string;
         session.user.isEligible = token.isEligible as boolean;
         session.user.isBlocked = token.isBlocked as boolean;
+        session.user.accessToken = token.accessToken as string;
       }
       return session;
     },

@@ -10,6 +10,7 @@ declare module "next-auth" {
       login: string;
       isEligible: boolean;
       isBlocked: boolean;
+      accessToken: string;
     } & DefaultSession["user"];
   }
 

@@ -1,0 +1,2334 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PS42 Luanda — Fase 2: Core do Sistema</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Bricolage+Grotesque:wght@400;500;600;700;800&family=Instrument+Sans:wght@400;500;600&display=swap');
+
+  :root {
+    --bg:        #07090d;
+    --s1:        #0d1117;
+    --s2:        #131920;
+    --s3:        #1a2230;
+    --border:    #1e2d3d;
+    --border2:   #263545;
+    --fg:        #dde4ec;
+    --muted:     #3d5166;
+    --sec:       #6a8099;
+    --teal:      #00e5b4;
+    --teal2:     rgba(0,229,180,0.1);
+    --teal3:     rgba(0,229,180,0.2);
+    --blue:      #4da6ff;
+    --orange:    #ff9f43;
+    --red:       #ff5e6c;
+    --green:     #32d68a;
+    --gold:      #f7c948;
+    --purple:    #b197fc;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'Instrument Sans', sans-serif;
+    min-height: 100vh;
+  }
+
+  /* ── LAYOUT ── */
+  .shell { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    background: var(--s1);
+    border-right: 1px solid var(--border);
+    position: sticky; top: 0; height: 100vh;
+    overflow-y: auto; scrollbar-width: none;
+    display: flex; flex-direction: column;
+  }
+  .sidebar::-webkit-scrollbar { display: none; }
+
+  .sb-head {
+    padding: 24px 20px 18px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sb-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 2.5px;
+    color: var(--muted); text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .sb-title {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 19px; font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+  .sb-title em { font-style: normal; color: var(--teal); }
+  .sb-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    margin-top: 9px;
+    background: rgba(77,166,255,0.1);
+    border: 1px solid rgba(77,166,255,0.25);
+    color: var(--blue);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 1.5px;
+    padding: 3px 10px; border-radius: 2px;
+  }
+
+  .sb-nav { padding: 14px 10px; flex: 1; }
+  .sb-group { margin-bottom: 22px; }
+  .sb-group-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8.5px; letter-spacing: 2px;
+    color: var(--muted); text-transform: uppercase;
+    padding: 0 10px; margin-bottom: 5px;
+  }
+  .sb-item {
+    display: flex; align-items: center; gap: 9px;
+    padding: 8px 10px; border-radius: 3px;
+    cursor: pointer; transition: all 0.15s;
+    font-size: 12.5px; color: var(--sec);
+    border: 1px solid transparent;
+    margin-bottom: 1px;
+  }
+  .sb-item:hover { background: var(--s2); color: var(--fg); }
+  .sb-item.active {
+    background: var(--teal2);
+    border-color: var(--teal3);
+    color: var(--teal);
+  }
+  .sb-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px; color: var(--muted); min-width: 18px;
+  }
+  .sb-item.active .sb-num { color: var(--teal); }
+  .sb-dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--border2); flex-shrink: 0;
+  }
+  .sb-item.active .sb-dot { background: var(--teal); }
+  .sb-item.done { color: var(--green); }
+  .sb-item.done .sb-dot { background: var(--green); }
+  .sb-item.done .sb-num { color: var(--green); }
+
+  .sb-foot {
+    padding: 16px 20px;
+    border-top: 1px solid var(--border);
+  }
+  .prog-row {
+    display: flex; justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; color: var(--muted);
+    letter-spacing: 1px; margin-bottom: 8px;
+  }
+  .prog-bar { height: 2px; background: var(--border2); border-radius: 1px; overflow: hidden; }
+  .prog-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--teal), var(--blue));
+    border-radius: 1px; transition: width 0.4s ease;
+  }
+
+  /* ── MAIN ── */
+  .main { overflow-y: auto; max-height: 100vh; }
+  .step { display: none; padding: 52px 60px; max-width: 880px; }
+  .step.active { display: block; }
+
+  /* ── STEP HEADER ── */
+  .step-head { margin-bottom: 44px; padding-bottom: 32px; border-bottom: 1px solid var(--border); }
+  .step-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .pill {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px; letter-spacing: 1px;
+    padding: 3px 10px; border-radius: 2px;
+  }
+  .pill-api   { background: rgba(0,229,180,0.1); border: 1px solid var(--teal3); color: var(--teal); }
+  .pill-rt    { background: rgba(77,166,255,0.1); border: 1px solid rgba(77,166,255,0.25); color: var(--blue); }
+  .pill-core  { background: rgba(255,159,67,0.1); border: 1px solid rgba(255,159,67,0.25); color: var(--orange); }
+  .pill-ui    { background: rgba(177,151,252,0.1); border: 1px solid rgba(177,151,252,0.25); color: var(--purple); }
+  .pill-done  { background: rgba(50,214,138,0.1); border: 1px solid rgba(50,214,138,0.25); color: var(--green); }
+  .step-pos { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 1px; }
+  .step-title {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 36px; font-weight: 800;
+    letter-spacing: -1px; line-height: 1.08;
+    margin-bottom: 12px;
+  }
+  .step-title em { font-style: normal; color: var(--teal); }
+  .step-title .accent-blue { color: var(--blue); }
+  .step-title .accent-orange { color: var(--orange); }
+  .step-desc { font-size: 14.5px; color: var(--sec); max-width: 600px; line-height: 1.75; }
+  .step-eta {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--muted); margin-top: 10px;
+  }
+  .step-eta::before { content: '⏱'; font-size: 11px; }
+
+  /* ── BLOCKS ── */
+  .block { margin-bottom: 40px; }
+  .block-title {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 17px; font-weight: 700;
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .block-title::before {
+    content: ''; width: 3px; height: 17px;
+    background: var(--teal); border-radius: 2px; flex-shrink: 0;
+  }
+
+  /* ── INFO BOXES ── */
+  .box {
+    border-radius: 3px; padding: 16px 20px;
+    margin-bottom: 14px; font-size: 13.5px;
+    line-height: 1.7; border-left: 3px solid;
+  }
+  .box.tip    { background: rgba(0,229,180,0.06); border-color: var(--teal); }
+  .box.warn   { background: rgba(255,159,67,0.07); border-color: var(--orange); }
+  .box.info   { background: rgba(77,166,255,0.07); border-color: var(--blue); }
+  .box.danger { background: rgba(255,94,108,0.07); border-color: var(--red); }
+  .box-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 2px;
+    text-transform: uppercase; margin-bottom: 5px; font-weight: 600;
+  }
+  .box.tip  .box-label  { color: var(--teal); }
+  .box.warn .box-label  { color: var(--orange); }
+  .box.info .box-label  { color: var(--blue); }
+  .box.danger .box-label { color: var(--red); }
+  .box strong { color: var(--fg); }
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px; color: var(--teal);
+    background: rgba(0,229,180,0.07);
+    padding: 1px 5px; border-radius: 2px;
+  }
+
+  /* ── CMD ── */
+  .cmd-block {
+    background: var(--s2); border: 1px solid var(--border2);
+    border-radius: 5px; overflow: hidden; margin-bottom: 12px;
+  }
+  .cmd-head {
+    background: var(--s3); padding: 9px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+  .cmd-lbl {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; color: var(--muted);
+    letter-spacing: 1.5px; text-transform: uppercase;
+  }
+  .cmd-copy {
+    background: none; border: 1px solid var(--border2);
+    color: var(--muted); font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; padding: 2px 9px; border-radius: 2px;
+    cursor: pointer; transition: all 0.2s; letter-spacing: 0.5px;
+  }
+  .cmd-copy:hover { border-color: var(--teal); color: var(--teal); }
+  .cmd-copy.ok { border-color: var(--green); color: var(--green); }
+  .cmd-body {
+    padding: 14px 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px; line-height: 1.85; overflow-x: auto;
+  }
+  .c { color: var(--muted); font-style: italic; }
+  .k { color: var(--purple); }
+  .f { color: var(--blue); }
+  .s { color: var(--orange); }
+  .p { color: #7dd3c8; }
+  .v { color: var(--teal); }
+  .n { color: #f78c6c; }
+  .o { color: var(--sec); }
+  .g { color: var(--green); }
+
+  /* ── CODE FILE ── */
+  .code-block {
+    background: var(--s2); border: 1px solid var(--border2);
+    border-radius: 5px; overflow: hidden; margin-bottom: 14px;
+  }
+  .code-head {
+    background: var(--s3); padding: 9px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+  .code-file {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--teal);
+    display: flex; align-items: center; gap: 7px;
+  }
+  .code-file::before { content: '📄'; font-size: 11px; }
+  .code-lang {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; color: var(--muted); letter-spacing: 1px;
+  }
+  .code-body {
+    padding: 18px 22px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; line-height: 1.9; overflow-x: auto; white-space: pre;
+  }
+
+  /* ── FLOW DIAGRAM ── */
+  .flow {
+    background: var(--s2); border: 1px solid var(--border2);
+    border-radius: 5px; padding: 28px 32px; margin-bottom: 16px;
+  }
+  .flow-title {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 14px; font-weight: 700;
+    margin-bottom: 24px; color: var(--sec);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .flow-steps { display: flex; align-items: center; flex-wrap: wrap; gap: 0; row-gap: 12px; }
+  .f-step { display: flex; align-items: center; }
+  .f-box {
+    background: var(--s3); border: 1px solid var(--border2);
+    padding: 10px 14px; font-size: 11.5px; text-align: center;
+    min-width: 110px; transition: all 0.15s; line-height: 1.35;
+  }
+  .f-box .f-n { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--muted); margin-bottom: 3px; }
+  .f-box.teal { border-color: var(--teal3); background: rgba(0,229,180,0.05); }
+  .f-box.blue { border-color: rgba(77,166,255,0.25); background: rgba(77,166,255,0.05); }
+  .f-box.green { border-color: rgba(50,214,138,0.25); background: rgba(50,214,138,0.05); }
+  .f-box.red { border-color: rgba(255,94,108,0.3); background: rgba(255,94,108,0.05); }
+  .f-box.gold { border-color: rgba(247,201,72,0.25); background: rgba(247,201,72,0.05); }
+  .f-arrow { width: 28px; height: 1px; background: var(--border2); position: relative; flex-shrink: 0; }
+  .f-arrow::after { content: '▶'; position: absolute; right: -4px; top: 50%; transform: translateY(-50%); font-size: 7px; color: var(--muted); }
+
+  /* ── STATS ROW ── */
+  .stats {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 2px; background: var(--border);
+    border: 1px solid var(--border); margin-bottom: 40px;
+  }
+  .stat {
+    background: var(--s1); padding: 22px 18px; text-align: center;
+  }
+  .stat-n {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 36px; font-weight: 800; line-height: 1;
+    margin-bottom: 5px;
+  }
+  .stat-l { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+
+  /* ── CHECKLIST ── */
+  .cl { list-style: none; }
+  .cl li {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 11px 0; border-bottom: 1px solid var(--border);
+    font-size: 13.5px; line-height: 1.5;
+  }
+  .cl li:last-child { border-bottom: none; }
+  .chk {
+    width: 18px; height: 18px; border: 1px solid var(--border2);
+    border-radius: 2px; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; flex-shrink: 0; margin-top: 2px;
+    transition: all 0.2s; font-size: 11px;
+  }
+  .chk:hover { border-color: var(--teal); }
+  .chk.on { background: var(--teal); border-color: var(--teal); color: var(--bg); }
+  .cl li.done .ct { color: var(--muted); text-decoration: line-through; }
+
+  /* ── ARCHITECTURE CARD ── */
+  .arch-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 28px; }
+  .arch-card {
+    background: var(--s2); border: 1px solid var(--border2);
+    border-radius: 4px; padding: 20px;
+    border-left: 3px solid var(--teal);
+  }
+  .arch-card.blue { border-left-color: var(--blue); }
+  .arch-card.orange { border-left-color: var(--orange); }
+  .arch-card.purple { border-left-color: var(--purple); }
+  .arch-icon { font-size: 22px; margin-bottom: 8px; display: block; }
+  .arch-title { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 14px; margin-bottom: 5px; }
+  .arch-desc { font-size: 12px; color: var(--sec); line-height: 1.6; }
+
+  /* ── OVERVIEW PILLS ── */
+  .ov-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 32px; }
+  .ov-pill {
+    display: flex; align-items: center; gap: 14px;
+    background: var(--s2); border: 1px solid var(--border);
+    border-radius: 4px; padding: 14px 18px;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .ov-pill:hover { border-color: var(--teal); }
+  .ov-pn { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--teal); min-width: 30px; }
+  .ov-pt { font-weight: 600; font-size: 13.5px; }
+  .ov-pd { font-size: 11px; color: var(--sec); margin-top: 1px; }
+  .ov-time { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--muted); margin-left: auto; white-space: nowrap; }
+
+  /* ── NAV BUTTONS ── */
+  .step-nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 28px 0; margin-top: 36px; border-top: 1px solid var(--border);
+  }
+  .btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 11px 22px; border-radius: 3px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.5px;
+    cursor: pointer; border: 1px solid; transition: all 0.2s;
+  }
+  .btn-primary { background: var(--teal); border-color: var(--teal); color: var(--bg); font-weight: 700; }
+  .btn-primary:hover { background: #00ffcc; }
+  .btn-sec { background: transparent; border-color: var(--border2); color: var(--sec); }
+  .btn-sec:hover { border-color: var(--teal); color: var(--teal); }
+  .btn-off { background: transparent; border-color: var(--border); color: var(--muted); cursor: not-allowed; }
+
+  @media (max-width: 860px) {
+    .shell { grid-template-columns: 1fr; }
+    .sidebar { position: static; height: auto; }
+    .step { padding: 32px 20px; }
+    .arch-grid { grid-template-columns: 1fr; }
+    .stats { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ═══ SIDEBAR ═══ -->
+<aside class="sidebar">
+  <div class="sb-head">
+    <div class="sb-eyebrow">42 Luanda · Sistema PS</div>
+    <div class="sb-title"><em>PS42</em> Luanda</div>
+    <div class="sb-badge">◆ FASE 2 · CORE DO SISTEMA</div>
+  </div>
+  <nav class="sb-nav">
+    <div class="sb-group">
+      <div class="sb-group-label">Visão Geral</div>
+      <div class="sb-item active" onclick="go('ov')"><span class="sb-num">00</span><span class="sb-dot"></span>Introdução à Fase 2</div>
+    </div>
+    <div class="sb-group">
+      <div class="sb-group-label">API 42 Intra</div>
+      <div class="sb-item" onclick="go('s1')"><span class="sb-num">01</span><span class="sb-dot"></span>Wrapper da API 42</div>
+      <div class="sb-item" onclick="go('s2')"><span class="sb-num">02</span><span class="sb-dot"></span>Motor de Elegibilidade</div>
+    </div>
+    <div class="sb-group">
+      <div class="sb-group-label">Pusher + Redis</div>
+      <div class="sb-item" onclick="go('s3')"><span class="sb-num">03</span><span class="sb-dot"></span>Configurar Pusher</div>
+      <div class="sb-item" onclick="go('s4')"><span class="sb-num">04</span><span class="sb-dot"></span>Configurar Redis</div>
+    </div>
+    <div class="sb-group">
+      <div class="sb-group-label">API Routes</div>
+      <div class="sb-item" onclick="go('s5')"><span class="sb-num">05</span><span class="sb-dot"></span>API de Sessões</div>
+      <div class="sb-item" onclick="go('s6')"><span class="sb-num">06</span><span class="sb-dot"></span>API da Fila</div>
+      <div class="sb-item" onclick="go('s7')"><span class="sb-num">07</span><span class="sb-dot"></span>API de Elegibilidade</div>
+    </div>
+    <div class="sb-group">
+      <div class="sb-group-label">Interfaces</div>
+      <div class="sb-item" onclick="go('s8')"><span class="sb-num">08</span><span class="sb-dot"></span>Dashboard do Cadete</div>
+      <div class="sb-item" onclick="go('s9')"><span class="sb-num">09</span><span class="sb-dot"></span>Formulário de Requisição</div>
+      <div class="sb-item" onclick="go('s10')"><span class="sb-num">10</span><span class="sb-dot"></span>Fila em Tempo Real</div>
+      <div class="sb-item" onclick="go('s11')"><span class="sb-num">11</span><span class="sb-dot"></span>Dashboard do Staff</div>
+      <div class="sb-item" onclick="go('s12')"><span class="sb-num">12</span><span class="sb-dot"></span>Gestão de Requisições</div>
+    </div>
+    <div class="sb-group">
+      <div class="sb-group-label">Finalizar</div>
+      <div class="sb-item" onclick="go('s13')"><span class="sb-num">13</span><span class="sb-dot"></span>Testar + Commit</div>
+    </div>
+  </nav>
+  <div class="sb-foot">
+    <div class="prog-row"><span>PROGRESSO FASE 2</span><span id="pct">0%</span></div>
+    <div class="prog-bar"><div class="prog-fill" id="pfill" style="width:0%"></div></div>
+  </div>
+</aside>
+
+<!-- ═══ MAIN ═══ -->
+<main class="main">
+
+<!-- ── STEP 0: OVERVIEW ── -->
+<div class="step active" id="s-ov">
+  <div class="step-head">
+    <div class="step-meta">
+      <span class="pill pill-core">FASE 2</span>
+      <span class="step-pos">PASSO 00 DE 13</span>
+    </div>
+    <div class="step-title">O <em>Core</em> do Sistema</div>
+    <p class="step-desc">A Fase 2 é o coração funcional do PS42. Aqui construímos tudo o que o regulamento exige operacionalmente: verificação automática de elegibilidade, requisições de sessão, fila em tempo real, e os dashboards de cadete e staff.</p>
+    <div class="step-eta">Duração estimada: 4–5 horas</div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-n" style="color:var(--teal)">8</div><div class="stat-l">Critérios Art.3</div></div>
+    <div class="stat"><div class="stat-n" style="color:var(--blue)">12</div><div class="stat-l">API Endpoints</div></div>
+    <div class="stat"><div class="stat-n" style="color:var(--orange)">2</div><div class="stat-l">Dashboards</div></div>
+    <div class="stat"><div class="stat-n" style="color:var(--green)">RT</div><div class="stat-l">Fila WebSocket</div></div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">Arquitectura desta fase</div>
+    <div class="arch-grid">
+      <div class="arch-card">
+        <span class="arch-icon">🔌</span>
+        <div class="arch-title">42 Intra API Wrapper</div>
+        <div class="arch-desc">Módulo centralizado para todas as chamadas à API 42. Tipos fortes, tratamento de erros, cache Redis automático.</div>
+      </div>
+      <div class="arch-card blue">
+        <span class="arch-icon">⚡</span>
+        <div class="arch-title">Motor de Elegibilidade</div>
+        <div class="arch-desc">Verifica os 8 critérios do Art. 3.º automaticamente. Cacheado 15 minutos. Resultado explícito por critério.</div>
+      </div>
+      <div class="arch-card orange">
+        <span class="arch-icon">📡</span>
+        <div class="arch-title">Fila em Tempo Real</div>
+        <div class="arch-desc">Pusher WebSockets para actualizar posição na fila, timer de sessão e notificações sem refresh de página.</div>
+      </div>
+      <div class="arch-card purple">
+        <span class="arch-icon">🖥️</span>
+        <div class="arch-title">Dashboards Funcionais</div>
+        <div class="arch-desc">Dashboard do cadete (elegibilidade, sessão activa, fila) e dashboard do staff (controlo operacional completo).</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">Passos desta fase</div>
+    <div class="ov-list">
+      <div class="ov-pill" onclick="go('s1')"><span class="ov-pn">01</span><div><div class="ov-pt">Wrapper da API 42 Intra</div><div class="ov-pd">lib/intra.ts — todas as chamadas tipadas</div></div><span class="ov-time">~25 min</span></div>
+      <div class="ov-pill" onclick="go('s2')"><span class="ov-pn">02</span><div><div class="ov-pt">Motor de Elegibilidade</div><div class="ov-pd">8 critérios do Art. 3 verificados automaticamente</div></div><span class="ov-time">~30 min</span></div>
+      <div class="ov-pill" onclick="go('s3')"><span class="ov-pn">03</span><div><div class="ov-pt">Configurar Pusher</div><div class="ov-pd">lib/pusher.ts — WebSockets para tempo real</div></div><span class="ov-time">~15 min</span></div>
+      <div class="ov-pill" onclick="go('s4')"><span class="ov-pn">04</span><div><div class="ov-pt">Configurar Redis</div><div class="ov-pd">lib/redis.ts — cache e rate limiting</div></div><span class="ov-time">~15 min</span></div>
+      <div class="ov-pill" onclick="go('s5')"><span class="ov-pn">05</span><div><div class="ov-pt">API de Sessões</div><div class="ov-pd">CRUD completo de sessões com validações</div></div><span class="ov-time">~25 min</span></div>
+      <div class="ov-pill" onclick="go('s6')"><span class="ov-pn">06</span><div><div class="ov-pt">API da Fila</div><div class="ov-pd">Gerir posições, eventos Pusher em tempo real</div></div><span class="ov-time">~20 min</span></div>
+      <div class="ov-pill" onclick="go('s7')"><span class="ov-pn">07</span><div><div class="ov-pt">API de Elegibilidade</div><div class="ov-pd">Endpoint que verifica e cacheia elegibilidade</div></div><span class="ov-time">~20 min</span></div>
+      <div class="ov-pill" onclick="go('s8')"><span class="ov-pn">08</span><div><div class="ov-pt">Dashboard do Cadete</div><div class="ov-pd">Visão geral: elegibilidade, sessão activa, fila</div></div><span class="ov-time">~30 min</span></div>
+      <div class="ov-pill" onclick="go('s9')"><span class="ov-pn">09</span><div><div class="ov-pt">Formulário de Requisição</div><div class="ov-pd">Pedir sessão com validação e 30min antecipação</div></div><span class="ov-time">~25 min</span></div>
+      <div class="ov-pill" onclick="go('s10')"><span class="ov-pn">10</span><div><div class="ov-pt">Fila em Tempo Real</div><div class="ov-pd">Componente com timer e actualizações WebSocket</div></div><span class="ov-time">~25 min</span></div>
+      <div class="ov-pill" onclick="go('s11')"><span class="ov-pn">11</span><div><div class="ov-pt">Dashboard do Staff</div><div class="ov-pd">Centro de controlo operacional em tempo real</div></div><span class="ov-time">~30 min</span></div>
+      <div class="ov-pill" onclick="go('s12')"><span class="ov-pn">12</span><div><div class="ov-pt">Gestão de Requisições</div><div class="ov-pd">Aprovar, rejeitar, forçar fim de sessão</div></div><span class="ov-time">~25 min</span></div>
+      <div class="ov-pill" onclick="go('s13')"><span class="ov-pn">13</span><div><div class="ov-pt">Testar + Commit</div><div class="ov-pd">Teste end-to-end do fluxo completo</div></div><span class="ov-time">~15 min</span></div>
+    </div>
+  </div>
+
+  <div class="box info"><div class="box-label">ℹ️ Pré-requisito</div>Antes de avançar, certifica-te que tens as <strong>4 keys do Pusher</strong> e as <strong>2 keys do Upstash Redis</strong> no teu <code>.env.local</code>. Os passos 3 e 4 guiam-te na criação das contas caso ainda não tenhas.</div>
+
+  <div class="step-nav">
+    <button class="btn btn-off">← Fase 1</button>
+    <button class="btn btn-primary" onclick="go('s1')">Começar — Passo 01 →</button>
+  </div>
+</div>
+
+<!-- ── STEP 1: API WRAPPER ── -->
+<div class="step" id="s-s1">
+  <div class="step-head">
+    <div class="step-meta"><span class="pill pill-api">API 42 INTRA</span><span class="step-pos">PASSO 01 DE 13</span></div>
+    <div class="step-title">Wrapper da <em>API 42</em></div>
+    <p class="step-desc">Criar um módulo centralizado para todas as chamadas à API 42 Intra. Tipagem forte, tratamento de erros e base para o motor de elegibilidade.</p>
+    <div class="step-eta">~25 minutos</div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">1.1 — lib/intra.ts</div>
+    <div class="box info"><div class="box-label">ℹ️ Porquê um wrapper centralizado</div>Todas as chamadas à API 42 passam por aqui. Se a API mudar, só alteramos num sítio. Também gere o token de acesso automaticamente a partir da sessão do NextAuth.</div>
+    <div class="code-block">
+      <div class="code-head"><span class="code-file">lib/intra.ts</span><span class="code-lang">TYPESCRIPT</span></div>
+      <div class="code-body"><span class="c">// ─── PS42 Luanda — 42 Intra API Wrapper ───────────────────────────────────</span>
+<span class="c">// Wrapper centralizado para todas as chamadas à API 42 Intra.</span>
+<span class="c">// Todos os tipos reflectem a estrutura real da API.</span>
+
+<span class="k">const</span> <span class="p">BASE_URL</span> = <span class="s">'https://api.intra.42.fr/v2'</span>
+
+<span class="c">// ── Tipos da API 42 ──────────────────────────────────────────────────────</span>
+
+<span class="k">export interface</span> <span class="f">IntraUser</span> {
+  id:          <span class="k">number</span>
+  login:       <span class="k">string</span>
+  displayname: <span class="k">string</span>
+  email:       <span class="k">string</span>
+  image:       { link: <span class="k">string</span> | <span class="k">null</span> }
+  cursus_users: <span class="f">IntraCursusUser</span>[]
+  campus_users: <span class="f">IntraCampusUser</span>[]
+  projects_users: <span class="f">IntraProject</span>[]
+}
+
+<span class="k">export interface</span> <span class="f">IntraCursusUser</span> {
+  id:       <span class="k">number</span>
+  grade:    <span class="k">string</span> | <span class="k">null</span>
+  level:    <span class="k">number</span>
+  cursus_id: <span class="k">number</span>
+  cursus:   { name: <span class="k">string</span>; slug: <span class="k">string</span> }
+}
+
+<span class="k">export interface</span> <span class="f">IntraCampusUser</span> {
+  campus_id: <span class="k">number</span>
+  is_primary: <span class="k">boolean</span>
+}
+
+<span class="k">export interface</span> <span class="f">IntraProject</span> {
+  id:          <span class="k">number</span>
+  status:      <span class="k">string</span>  <span class="c">// 'finished'|'in_progress'|'searching_a_group'|'creating_group'</span>
+  validated?:  <span class="k">boolean</span>
+  final_mark:  <span class="k">number</span> | <span class="k">null</span>
+  project:     { name: <span class="k">string</span>; slug: <span class="k">string</span> }
+  cursus_ids:  <span class="k">number</span>[]
+  created_at:  <span class="k">string</span>
+  updated_at:  <span class="k">string</span>
+}
+
+<span class="k">export interface</span> <span class="f">IntraScaleTeam</span> {
+  id:         <span class="k">number</span>
+  final_mark: <span class="k">number</span> | <span class="k">null</span>
+  comment:    <span class="k">string</span> | <span class="k">null</span>
+  created_at: <span class="k">string</span>
+}
+
+<span class="k">export interface</span> <span class="f">IntraCoalition</span> {
+  id:        <span class="k">number</span>
+  name:      <span class="k">string</span>
+  color:     <span class="k">string</span>
+  image_url: <span class="k">string</span> | <span class="k">null</span>
+  score:     <span class="k">number</span>
+}
+
+<span class="k">export interface</span> <span class="f">IntraEvent</span> {
+  id:         <span class="k">number</span>
+  name:       <span class="k">string</span>
+  kind:       <span class="k">string</span>
+  begin_at:   <span class="k">string</span>
+  end_at:     <span class="k">string</span>
+  location:   <span class="k">string</span> | <span class="k">null</span>
+}
+
+<span class="k">export interface</span> <span class="f">IntraExam</span> {
+  id:       <span class="k">number</span>
+  name:     <span class="k">string</span>
+  begin_at: <span class="k">string</span>
+  end_at:   <span class="k">string</span>
+  location: <span class="k">string</span> | <span class="k">null</span>
+}
+
+<span class="c">// ── Classe cliente ────────────────────────────────────────────────────────</span>
+
+<span class="k">export class</span> <span class="f">IntraClient</span> {
+  <span class="k">private</span> token: <span class="k">string</span>
+
+  <span class="k">constructor</span>(token: <span class="k">string</span>) {
+    <span class="k">this</span>.token = token
+  }
+
+  <span class="k">private async</span> <span class="f">get</span>&lt;T&gt;(path: <span class="k">string</span>, params?: Record&lt;<span class="k">string</span>, <span class="k">string</span>&gt;): Promise&lt;T&gt; {
+    <span class="k">const</span> url = <span class="k">new</span> <span class="f">URL</span>(<span class="s">`</span><span class="v">${BASE_URL}${path}</span><span class="s">`</span>)
+    <span class="k">if</span> (params) {
+      <span class="f">Object</span>.entries(params).forEach(([k, v]) => url.searchParams.<span class="f">set</span>(k, v))
+    }
+
+    <span class="k">const</span> res = <span class="k">await</span> <span class="f">fetch</span>(url.<span class="f">toString</span>(), {
+      headers: {
+        Authorization: <span class="s">`Bearer </span><span class="v">${this.token}</span><span class="s">`</span>,
+        <span class="s">'Content-Type'</span>: <span class="s">'application/json'</span>,
+      },
+      next: { revalidate: <span class="n">900</span> },  <span class="c">// cache 15 min</span>
+    })
+
+    <span class="k">if</span> (!res.ok) {
+      <span class="k">throw new</span> <span class="f">Error</span>(<span class="s">`Intra API error: </span><span class="v">${res.status}</span><span class="s"> </span><span class="v">${res.statusText}</span><span class="s"> on </span><span class="v">${path}</span><span class="s">`</span>)
+    }
+
+    <span class="k">return</span> res.<span class="f">json</span>() <span class="k">as</span> Promise&lt;T&gt;
+  }
+
+  <span class="c">// ── Utilizador autenticado ──────────────────────────────────────────────</span>
+
+  <span class="k">async</span> <span class="f">getMe</span>(): Promise&lt;<span class="f">IntraUser</span>&gt; {
+    <span class="k">return</span> <span class="k">this</span>.<span class="f">get</span>&lt;<span class="f">IntraUser</span>&gt;(<span class="s">'/me'</span>)
+  }
+
+  <span class="k">async</span> <span class="f">getMyCursus</span>(): Promise&lt;<span class="f">IntraCursusUser</span>[]&gt; {
+    <span class="k">return</span> <span class="k">this</span>.<span class="f">get</span>&lt;<span class="f">IntraCursusUser</span>[]&gt;(<span class="s">'/me/cursus_users'</span>)
+  }
+
+  <span class="k">async</span> <span class="f">getMyProjects</span>(): Promise&lt;<span class="f">IntraProject</span>[]&gt; {
+    <span class="k">return</span> <span class="k">this</span>.<span class="f">get</span>&lt;<span class="f">IntraProject</span>[]&gt;(<span class="s">'/me/projects_users'</span>, {
+      <span class="s">'filter[cursus_id]'</span>: <span class="s">'21'</span>,  <span class="c">// cursus_id 21 = 42cursus</span>
+    })
+  }
+
+  <span class="k">async</span> <span class="f">getMyScaleTeams</span>(): Promise&lt;<span class="f">IntraScaleTeam</span>[]&gt; {
+    <span class="k">const</span> since = <span class="k">new</span> <span class="f">Date</span>()
+    since.<span class="f">setDate</span>(since.<span class="f">getDate</span>() - <span class="n">30</span>)
+    <span class="k">return</span> <span class="k">this</span>.<span class="f">get</span>&lt;<span class="f">IntraScaleTeam</span>[]&gt;(<span class="s">'/me/scale_teams'</span>, {
+      <span class="s">'filter[future]'</span>: <span class="s">'false'</span>,
+      <span class="s">'range[created_at]'</span>: <span class="s">`</span><span class="v">${since.toISOString()}</span><span class="s">,</span><span class="v">${new Date().toISOString()}</span><span class="s">`</span>,
+    })
+  }
+
+  <span class="k">async</span> <span class="f">getMyCoalitions</span>(): Promise&lt;<span class="f">IntraCoalition</span>[]&gt; {
+    <span class="k">return</span> <span class="k">this</span>.<span class="f">get</span>&lt;<span class="f">IntraCoalition</span>[]&gt;(<span class="s">'/me/coalitions'</span>)
+  }
+
+  <span class="c">// ── Campus ─────────────────────────────────────────────────────────────</span>
+
+  <span class="k">async</span> <span class="f">getCampusEvents</span>(campusId: <span class="k">string</span>): Promise&lt;<span class="f">IntraEvent</span>[]&gt; {
+    <span class="k">const</span> now = <span class="k">new</span> <span class="f">Date</span>()
+    <span class="k">const</span> future = <span class="k">new</span> <span class="f">Date</span>(now.<span class="f">getTime</span>() + <span class="n">7</span> * <span class="n">24</span> * <span class="n">60</span> * <span class="n">60</span> * <span class="n">1000</span>)
+    <span class="k">return</span> <span class="k">this</span>.<span class="f">get</span>&lt;<span class="f">IntraEvent</span>[]&gt;(<span class="s">`/campus/</span><span class="v">${campusId}</span><span class="s">/events`</span>, {
+      <span class="s">'range[begin_at]'</span>: <span class="s">`</span><span class="v">${now.toISOString()}</span><span class="s">,</span><span class="v">${future.toISOString()}</span><span class="s">`</span>,
+    })
+  }
+
+  <span class="k">async</span> <span class="f">getCampusExams</span>(campusId: <span class="k">string</span>): Promise&lt;<span class="f">IntraExam</span>[]&gt; {
+    <span class="k">return</span> <span class="k">this</span>.<span class="f">get</span>&lt;<span class="f">IntraExam</span>[]&gt;(<span class="s">`/campus/</span><span class="v">${campusId}</span><span class="s">/exams`</span>)
+  }
+}
+
+<span class="c">// ── Helper para criar cliente a partir da sessão NextAuth ─────────────────</span>
+
+<span class="k">export function</span> <span class="f">createIntraClient</span>(accessToken: <span class="k">string</span>): <span class="f">IntraClient</span> {
+  <span class="k">return new</span> <span class="f">IntraClient</span>(accessToken)
+}</div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">1.2 — Guardar o access token na sessão</div>
+    <p style="color:var(--sec);font-size:13.5px;margin-bottom:14px;">Para chamar a API 42 em nome do utilizador, precisamos do <code>access_token</code> na sessão. Actualiza o <code>lib/auth.ts</code>:</p>
+    <div class="code-block">
+      <div class="code-head"><span class="code-file">lib/auth.ts — adicionar ao callbacks</span><span class="code-lang">TYPESCRIPT</span></div>
+      <div class="code-body"><span class="c">// Adicionar dentro de callbacks: {}</span>
+
+<span class="k">async</span> <span class="f">jwt</span>({ token, account }) {
+  <span class="c">// Guardar access_token do OAuth no JWT</span>
+  <span class="k">if</span> (account?.access_token) {
+    token.accessToken = account.access_token
+  }
+  <span class="k">return</span> token
+},
+
+<span class="k">async</span> <span class="f">session</span>({ session, token }) {
+  <span class="c">// Expor o access_token na sessão</span>
+  session.accessToken = token.accessToken <span class="k">as string</span>
+  <span class="c">// ... resto do código existente</span>
+  <span class="k">return</span> session
+},
+
+<span class="c">// Adicionar ao types/index.ts também:</span>
+<span class="c">// declare module 'next-auth' {</span>
+<span class="c">//   interface Session { accessToken: string }</span>
+<span class="c">// }</span></div>
+    </div>
+    <div class="box warn"><div class="box-label">⚠️ Sessão Strategy</div>Adiciona também <code>session: &#123; strategy: "jwt" &#125;</code> no objecto de configuração do NextAuth (mesmo nível de <code>providers</code>). Isto é necessário para o JWT callback funcionar.</div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">✅ Checklist — Passo 01</div>
+    <ul class="cl">
+      <li><div class="chk" onclick="tc(this)"></div><span class="ct">lib/intra.ts criado com todos os tipos e métodos</span></li>
+      <li><div class="chk" onclick="tc(this)"></div><span class="ct">JWT callback a guardar o access_token</span></li>
+      <li><div class="chk" onclick="tc(this)"></div><span class="ct">Session callback a expor o accessToken</span></li>
+      <li><div class="chk" onclick="tc(this)"></div><span class="ct">types/index.ts actualizado com accessToken na Session</span></li>
+    </ul>
+  </div>
+
+  <div class="step-nav">
+    <button class="btn btn-sec" onclick="go('ov')">← Visão Geral</button>
+    <button class="btn btn-primary" onclick="go('s2')">Passo 02 →</button>
+  </div>
+</div>
+
+<!-- ── STEP 2: ELIGIBILITY ENGINE ── -->
+<div class="step" id="s-s2">
+  <div class="step-head">
+    <div class="step-meta"><span class="pill pill-core">CORE</span><span class="step-pos">PASSO 02 DE 13</span></div>
+    <div class="step-title">Motor de <em>Elegibilidade</em></div>
+    <p class="step-desc">O cérebro do sistema. Verifica automaticamente os 8 critérios do Art. 3.º contra a API 42 e a base de dados. Resultado detalhado por critério com motivo de falha.</p>
+    <div class="step-eta">~30 minutos</div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">2.1 — Fluxo do motor</div>
+    <div class="flow">
+      <div class="flow-title">⚡ Verificação de Elegibilidade — Art. 3.º</div>
+      <div class="flow-steps">
+        <div class="f-step"><div class="f-box teal"><div class="f-n">INPUT</div>userId + accessToken</div><div class="f-arrow"></div></div>
+        <div class="f-step"><div class="f-box blue"><div class="f-n">CACHE</div>Redis 15min?</div><div class="f-arrow"></div></div>
+        <div class="f-step"><div class="f-box"><div class="f-n">API 42</div>Fetch dados</div><div class="f-arrow"></div></div>
+        <div class="f-step"><div class="f-box"><div class="f-n">DB LOCAL</div>Check disciplinar</div><div class="f-arrow"></div></div>
+        <div class="f-step"><div class="f-box green"><div class="f-n">RESULT</div>8 critérios + bool</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">2.2 — lib/eligibility.ts</div>
+    <div class="code-block">
+      <div class="code-head"><span class="code-file">lib/eligibility.ts</span><span class="code-lang">TYPESCRIPT</span></div>
+      <div class="code-body"><span class="c">// ─── PS42 Luanda — Motor de Elegibilidade ─────────────────────────────────</span>
+<span class="c">// Implementa os 8 critérios do Artigo 3.º do Regulamento</span>
+
+<span class="k">import</span> { prisma } <span class="k">from</span> <span class="s">'@/lib/prisma'</span>
+<span class="k">import</span> { redis } <span class="k">from</span> <span class="s">'@/lib/redis'</span>
+<span class="k">import</span> { createIntraClient } <span class="k">from</span> <span class="s">'@/lib/intra'</span>
+
+<span class="c">// ── Tipos ─────────────────────────────────────────────────────────────────</span>
+
+<span class="k">export interface</span> <span class="f">EligibilityCriterion</span> {
+  id:       <span class="k">string</span>
+  label:    <span class="k">string</span>
+  article:  <span class="k">string</span>
+  passed:   <span class="k">boolean</span>
+  reason?:  <span class="k">string</span>   <span class="c">// Motivo se falhou</span>
+}
+
+<span class="k">export interface</span> <span class="f">EligibilityResult</span> {
+  isEligible:  <span class="k">boolean</span>
+  criteria:    <span class="f">EligibilityCriterion</span>[]
+  checkedAt:   <span class="k">string</span>
+  cacheHit:    <span class="k">boolean</span>
+}
+
+<span class="k">const</span> <span class="p">CACHE_TTL</span> = <span class="n">900</span>         <span class="c">// 15 minutos em segundos</span>
+<span class="k">const</span> <span class="p">CAMPUS_ID</span> = <span class="k">process</span>.env.<span class="p">FORTY_TWO_CAMPUS_ID</span> ?? <span class="s">''</span>
+<span class="k">const</span> <span class="p">LUANDA_CURSUS_ID</span> = <span class="n">21</span>   <span class="c">// cursus_id do 42cursus — confirmar com staff</span>
+
+<span class="c">// ── Motor Principal ───────────────────────────────────────────────────────</span>
+
+<span class="k">export async function</span> <span class="f">checkEligibility</span>(
+  userId: <span class="k">string</span>,
+  accessToken: <span class="k">string</span>
+): Promise&lt;<span class="f">EligibilityResult</span>&gt; {
+
+  <span class="c">// 1. Verificar cache Redis</span>
+  <span class="k">const</span> cacheKey = <span class="s">`eligibility:</span><span class="v">${userId}</span><span class="s">`</span>
+  <span class="k">try</span> {
+    <span class="k">const</span> cached = <span class="k">await</span> redis.<span class="f">get</span>&lt;<span class="f">EligibilityResult</span>&gt;(cacheKey)
+    <span class="k">if</span> (cached) <span class="k">return</span> { ...cached, cacheHit: <span class="k">true</span> }
+  } <span class="k">catch</span> (e) {
+    <span class="c">// Cache indisponível — continuar sem cache</span>
+  }
+
+  <span class="c">// 2. Buscar dados necessários em paralelo</span>
+  <span class="k">const</span> intra = <span class="f">createIntraClient</span>(accessToken)
+
+  <span class="k">const</span> [cursusData, projects, scaleTeams, dbUser, activeRecords] = <span class="k">await</span> <span class="f">Promise</span>.<span class="f">all</span>([
+    intra.<span class="f">getMyCursus</span>().<span class="f">catch</span>(() => []),
+    intra.<span class="f">getMyProjects</span>().<span class="f">catch</span>(() => []),
+    intra.<span class="f">getMyScaleTeams</span>().<span class="f">catch</span>(() => []),
+    prisma.user.<span class="f">findUnique</span>({ where: { id: userId } }),
+    prisma.disciplinaryRecord.<span class="f">findMany</span>({
+      where: { userId, isActive: <span class="k">true</span> },
+    }),
+  ])
+
+  <span class="c">// Cursus principal (42cursus)</span>
+  <span class="k">const</span> mainCursus = cursusData.<span class="f">find</span>(c => c.cursus_id === <span class="p">LUANDA_CURSUS_ID</span>)
+
+  <span class="c">// 3. Avaliar cada critério do Art. 3.º ────────────────────────────────────</span>
+
+  <span class="k">const</span> criteria: <span class="f">EligibilityCriterion</span>[] = [
+
+    <span class="c">// Art. 3a — Ser Cadete da 42 Luanda</span>
+    {
+      id: <span class="s">'a_cadete'</span>,
+      label: <span class="s">'Cadete da 42 Luanda'</span>,
+      article: <span class="s">'Art. 3.º-a'</span>,
+      passed: !!dbUser && dbUser.role === <span class="s">'CADETE'</span>,
+      reason: !dbUser ? <span class="s">'Utilizador não encontrado no sistema'</span> :
+              dbUser.role !== <span class="s">'CADETE'</span> ? <span class="s">'Apenas cadetes têm acesso'</span> : <span class="k">undefined</span>,
+    },
+
+    <span class="c">// Art. 3b — Concluído a 2ª Órbita do Holy Graph</span>
+    {
+      id: <span class="s">'b_orbita'</span>,
+      label: <span class="s">'2ª Órbita do Holy Graph'</span>,
+      article: <span class="s">'Art. 3.º-b'</span>,
+      passed: (mainCursus?.level ?? <span class="n">0</span>) >= <span class="n">3</span>,  <span class="c">// nível 3+ ≈ 2ª órbita concluída</span>
+      reason: !mainCursus ? <span class="s">'Cursus 42 não encontrado'</span> :
+              (mainCursus.level < <span class="n">3</span>) ? <span class="s">`Nível actual: ${mainCursus.level.toFixed(2)} (mín: 3.00)`</span> : <span class="k">undefined</span>,
+    },
+
+    <span class="c">// Art. 3c — Ritmo ≤ 22</span>
+    {
+      id: <span class="s">'c_ritmo'</span>,
+      label: <span class="s">'Ritmo ≤ 22'</span>,
+      article: <span class="s">'Art. 3.º-c'</span>,
+      passed: (mainCursus?.level ?? <span class="n">99</span>) <= <span class="n">22</span>,
+      reason: (mainCursus?.level ?? <span class="n">0</span>) > <span class="n">22</span> ?
+              <span class="s">`Nível ${mainCursus?.level.toFixed(2)} excede o limite de 22`</span> : <span class="k">undefined</span>,
+    },
+
+    <span class="c">// Art. 3d — Média de avaliações > 3/mês</span>
+    {
+      id: <span class="s">'d_avaliacoes'</span>,
+      label: <span class="s">'Média avaliações > 3/mês'</span>,
+      article: <span class="s">'Art. 3.º-d'</span>,
+      passed: (() => {
+        <span class="k">const</span> validEvals = scaleTeams.<span class="f">filter</span>(s => s.final_mark !== <span class="k">null</span>)
+        <span class="k">if</span> (validEvals.length === <span class="n">0</span>) <span class="k">return false</span>
+        <span class="k">const</span> avg = validEvals.<span class="f">reduce</span>((s, e) => s + (e.final_mark ?? <span class="n">0</span>), <span class="n">0</span>) / validEvals.length
+        <span class="k">return</span> avg > <span class="n">3</span>
+      })(),
+      reason: (() => {
+        <span class="k">const</span> validEvals = scaleTeams.<span class="f">filter</span>(s => s.final_mark !== <span class="k">null</span>)
+        <span class="k">if</span> (validEvals.length === <span class="n">0</span>) <span class="k">return</span> <span class="s">'Sem avaliações nos últimos 30 dias'</span>
+        <span class="k">const</span> avg = validEvals.<span class="f">reduce</span>((s, e) => s + (e.final_mark ?? <span class="n">0</span>), <span class="n">0</span>) / validEvals.length
+        <span class="k">return</span> avg <= <span class="n">3</span> ? <span class="s">`Média actual: ${avg.toFixed(1)} (mín: 3.0)`</span> : <span class="k">undefined</span>
+      })(),
+    },
+
+    <span class="c">// Art. 3e — Sem histórico disciplinar grave</span>
+    {
+      id: <span class="s">'e_disciplinar'</span>,
+      label: <span class="s">'Sem histórico disciplinar grave'</span>,
+      article: <span class="s">'Art. 3.º-e'</span>,
+      passed: !activeRecords.<span class="f">some</span>(r =>
+        r.type === <span class="s">'SUSPENSION'</span> || r.type === <span class="s">'EXPULSION'</span>
+      ),
+      reason: activeRecords.<span class="f">some</span>(r => r.type === <span class="s">'EXPULSION'</span>) ?
+              <span class="s">'Expulsão activa no sistema'</span> :
+              activeRecords.<span class="f">some</span>(r => r.type === <span class="s">'SUSPENSION'</span>) ?
+              <span class="s">'Suspensão activa no sistema'</span> : <span class="k">undefined</span>,
+    },
+
+    <span class="c">// Art. 3f — Situação académica regular</span>
+    {
+      id: <span class="s">'f_academico'</span>,
+      label: <span class="s">'Situação académica regular'</span>,
+      article: <span class="s">'Art. 3.º-f'</span>,
+      passed: (() => {
+        <span class="k">const</span> failed = projects.<span class="f">filter</span>(p =>
+          p.status === <span class="s">'finished'</span> && p.validated === <span class="k">false</span> && (p.final_mark ?? <span class="n">100</span>) < <span class="n">50</span>
+        )
+        <span class="k">return</span> failed.length < <span class="n">3</span>  <span class="c">// < 3 projectos falhados consecutivos</span>
+      })(),
+      reason: <span class="s">'Atrasos graves em projectos detectados'</span>,
+    },
+
+    <span class="c">// Art. 3g — Comportamento adequado (baseado em reports resolvidos)</span>
+    {
+      id: <span class="s">'g_conduta'</span>,
+      label: <span class="s">'Comportamento adequado'</span>,
+      article: <span class="s">'Art. 3.º-g'</span>,
+      passed: !dbUser?.isBlocked,
+      reason: dbUser?.isBlocked ? <span class="s">'Acesso bloqueado pelo staff'</span> : <span class="k">undefined</span>,
+    },
+
+    <span class="c">// Art. 3h — Sem sanção disciplinar em vigor</span>
+    {
+      id: <span class="s">'h_sancao'</span>,
+      label: <span class="s">'Sem sanção disciplinar em vigor'</span>,
+      article: <span class="s">'Art. 3.º-h'</span>,
+      passed: !activeRecords.<span class="f">some</span>(r => {
+        <span class="k">if</span> (!r.isActive) <span class="k">return false</span>
+        <span class="k">if</span> (!r.validUntil) <span class="k">return</span> r.type !== <span class="s">'WARNING'</span>
+        <span class="k">return</span> <span class="k">new</span> <span class="f">Date</span>(r.validUntil) > <span class="k">new</span> <span class="f">Date</span>()
+      }),
+      reason: <span class="s">'Sanção disciplinar activa e dentro do prazo'</span>,
+    },
+  ]
+
+  <span class="k">const</span> isEligible = criteria.<span class="f">every</span>(c => c.passed)
+  <span class="k">const</span> result: <span class="f">EligibilityResult</span> = {
+    isEligible,
+    criteria,
+    checkedAt: <span class="k">new</span> <span class="f">Date</span>().<span class="f">toISOString</span>(),
+    cacheHit: <span class="k">false</span>,
+  }
+
+  <span class="c">// 4. Actualizar DB + cachear resultado</span>
+  <span class="k">await</span> <span class="f">Promise</span>.<span class="f">all</span>([
+    prisma.user.<span class="f">update</span>({
+      where: { id: userId },
+      data: {
+        isEligible,
+        eligibilityNote: isEligible ? <span class="k">null</span> :
+          criteria.<span class="f">filter</span>(c => !c.passed).<span class="f">map</span>(c => c.label).<span class="f">join</span>(<span class="s">', '</span>),
+        lastSyncAt: <span class="k">new</span> <span class="f">Date</span>(),
+      },
+    }),
+    redis.<span class="f">setex</span>(cacheKey, <span class="p">CACHE_TTL</span>, <span class="f">JSON</span>.<span class="f">stringify</span>(result)).<span class="f">catch</span>(() => {}),
+  ])
+
+  <span class="k">return</span> result
+}
+
+<span class="c">// ── Verificar bloqueio por horário/exames ─────────────────────────────────</span>
+
+<span class="k">export function</span> <span class="f">isWithinOperatingHours</span>(): { allowed: <span class="k">boolean</span>; reason?: <span class="k">string</span> } {
+  <span class="k">const</span> now = <span class="k">new</span> <span class="f">Date</span>()
+  <span class="k">const</span> day = now.<span class="f">getDay</span>()    <span class="c">// 0=Dom, 1=Seg, ..., 5=Sex, 6=Sáb</span>
+  <span class="k">const</span> hour = now.<span class="f">getHours</span>()
+
+  <span class="c">// Art. 4a — Seg a Sex: 08h às 17h</span>
+  <span class="k">if</span> (day === <span class="n">0</span> || day === <span class="n">6</span>) {
+    <span class="k">return</span> { allowed: <span class="k">false</span>, reason: <span class="s">'A PlayStation não está disponível ao fim-de-semana.'</span> }
+  }
+  <span class="k">if</span> (hour < <span class="n">8</span> || hour >= <span class="n">17</span>) {
+    <span class="k">return</span> { allowed: <span class="k">false</span>, reason: <span class="s">'Fora do horário. Disponível Seg-Sex das 08h00 às 17h00.'</span> }
+  }
+
+  <span class="k">return</span> { allowed: <span class="k">true</span> }
+}</div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">✅ Checklist — Passo 02</div>
+    <ul class="cl">
+      <li><div class="chk" onclick="tc(this)"></div><span class="ct">lib/eligibility.ts criado com os 8 critérios</span></li>
+      <li><div class="chk" onclick="tc(this)"></div><span class="ct">isWithinOperatingHours() implementada (Art. 4a)</span></li>
+      <li><div class="chk" onclick="tc(this)"></div><span class="ct">Cache Redis integrado no motor</span></li>
+    </ul>
+  </div>
+
+  <div class="step-nav">
+    <button class="btn btn-sec" onclick="go('s1')">← Passo 01</button>
+    <button class="btn btn-primary" onclick="go('s3')">Passo 03 →</button>
+  </div>
+</div>
+
+<!-- ── STEP 3: PUSHER ── -->
+<div class="step" id="s-s3">
+  <div class="step-head">
+    <div class="step-meta"><span class="pill pill-rt">TEMPO REAL</span><span class="step-pos">PASSO 03 DE 13</span></div>
+    <div class="step-title">Configurar <em>Pusher</em></div>
+    <p class="step-desc">Pusher é o motor WebSocket do sistema — gere a fila em tempo real, os timers de sessão e as notificações instantâneas sem refresh.</p>
+    <div class="step-eta">~15 minutos</div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">3.1 — Criar conta e app no Pusher</div>
+    <div style="background:var(--s2);border:1px solid var(--border2);border-radius:5px;padding:20px;font-size:13px;line-height:2.3;">
+      <div>1. Vai a <strong style="color:var(--teal)">pusher.com</strong> → Sign Up (gratuito)</div>
+      <div>2. Cria uma nova app: <strong style="color:var(--fg)">ps42-luanda</strong></div>
+      <div>3. Cluster: <strong style="color:var(--orange)">eu-west-1</strong> (mais próximo de Angola)</div>
+      <div>4. Em <strong style="color:var(--fg)">App Keys</strong>, copia os 4 valores para o <code>.env.local</code></div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">3.2 — Actualizar .env.local</div>
+    <div class="cmd-block">
+      <div class="cmd-head"><span class="cmd-lbl">.ENV.LOCAL</span></div>
+      <div class="cmd-body"><span class="p">PUSHER_APP_ID</span>=<span class="s">"[app_id do Pusher]"</span>
+<span class="p">NEXT_PUBLIC_PUSHER_KEY</span>=<span class="s">"[key do Pusher]"</span>
+<span class="p">PUSHER_SECRET</span>=<span class="s">"[secret do Pusher]"</span>
+<span class="p">NEXT_PUBLIC_PUSHER_CLUSTER</span>=<span class="s">"eu"</span></div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">3.3 — lib/pusher.ts</div>
+    <div class="code-block">
+      <div class="code-head"><span class="code-file">lib/pusher.ts</span><span class="code-lang">TYPESCRIPT</span></div>
+      <div class="code-body"><span class="k">import</span> PusherServer <span class="k">from</span> <span class="s">'pusher'</span>
+<span class="k">import</span> PusherClient <span class="k">from</span> <span class="s">'pusher-js'</span>
+
+<span class="c">// ── Server-side (API routes) ──────────────────────────────────────────────</span>
+<span class="k">export const</span> pusherServer = <span class="k">new</span> <span class="f">PusherServer</span>({
+  appId:   <span class="k">process</span>.env.<span class="p">PUSHER_APP_ID</span>!,
+  key:     <span class="k">process</span>.env.<span class="p">NEXT_PUBLIC_PUSHER_KEY</span>!,
+  secret:  <span class="k">process</span>.env.<span class="p">PUSHER_SECRET</span>!,
+  cluster: <span class="k">process</span>.env.<span class="p">NEXT_PUBLIC_PUSHER_CLUSTER</span>!,
+  useTLS:  <span class="k">true</span>,
+})
+
+<span class="c">// ── Client-side (componentes React) ──────────────────────────────────────</span>
+<span class="k">export const</span> pusherClient = <span class="k">new</span> <span class="f">PusherClient</span>(
+  <span class="k">process</span>.env.<span class="p">NEXT_PUBLIC_PUSHER_KEY</span>!,
+  { cluster: <span class="k">process</span>.env.<span class="p">NEXT_PUBLIC_PUSHER_CLUSTER</span>! }
+)
+
+<span class="c">// ── Canais e eventos PS42 ─────────────────────────────────────────────────</span>
+<span class="k">export const</span> CHANNELS = {
+  QUEUE:    <span class="s">'ps42-queue'</span>,          <span class="c">// Estado global da fila</span>
+  SESSION:  <span class="s">'ps42-session'</span>,        <span class="c">// Sessão activa</span>
+  STAFF:    <span class="s">'ps42-staff'</span>,          <span class="c">// Notificações staff</span>
+} <span class="k">as const</span>
+
+<span class="k">export const</span> EVENTS = {
+  QUEUE_UPDATED:    <span class="s">'queue:updated'</span>,
+  SESSION_STARTED:  <span class="s">'session:started'</span>,
+  SESSION_ENDED:    <span class="s">'session:ended'</span>,
+  SESSION_TIMER:    <span class="s">'session:timer'</span>,
+  NEW_REQUEST:      <span class="s">'staff:new-request'</span>,
+  REQUEST_APPROVED: <span class="s">'staff:approved'</span>,
+} <span class="k">as const</span></div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">✅ Checklist — Passo 03</div>
+    <ul class="cl">
+      <li><div class="chk" onclick="tc(this)"></div><span class="ct">Conta Pusher criada e app ps42-luanda criada</span></li>
+      <li><div class="chk" onclick="tc(this)"></div><span class="ct">4 keys do Pusher no .env.local</span></li>
+      <li><div class="chk" onclick="tc(this)"></div><span class="ct">lib/pusher.ts criado com canais e eventos definidos</span></li>
+    </ul>
+  </div>
+
+  <div class="step-nav">
+    <button class="btn btn-sec" onclick="go('s2')">← Passo 02</button>
+    <button class="btn btn-primary" onclick="go('s4')">Passo 04 →</button>
+  </div>
+</div>
+
+<!-- ── STEP 4: REDIS ── -->
+<div class="step" id="s-s4">
+  <div class="step-head">
+    <div class="step-meta"><span class="pill pill-rt">CACHE</span><span class="step-pos">PASSO 04 DE 13</span></div>
+    <div class="step-title">Configurar <em>Redis</em></div>
+    <p class="step-desc">Upstash Redis para cache de elegibilidade (15 min), sessão activa e rate limiting da API 42.</p>
+    <div class="step-eta">~15 minutos</div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">4.1 — Criar base de dados Redis no Upstash</div>
+    <div style="background:var(--s2);border:1px solid var(--border2);border-radius:5px;padding:20px;font-size:13px;line-height:2.3;">
+      <div>1. Vai a <strong style="color:var(--teal)">console.upstash.com</strong> → Create Database</div>
+      <div>2. Nome: <strong style="color:var(--fg)">ps42-luanda</strong> · Região: <strong style="color:var(--orange)">eu-west-1</strong></div>
+      <div>3. Em <strong style="color:var(--fg)">REST API</strong> → copia <code>UPSTASH_REDIS_REST_URL</code> e <code>UPSTASH_REDIS_REST_TOKEN</code></div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">4.2 — lib/redis.ts</div>
+    <div class="code-block">
+      <div class="code-head"><span class="code-file">lib/redis.ts</span><span class="code-lang">TYPESCRIPT</span></div>
+      <div class="code-body"><span class="k">import</span> { Redis } <span class="k">from</span> <span class="s">'@upstash/redis'</span>
+<span class="k">import</span> { Ratelimit } <span class="k">from</span> <span class="s">'@upstash/ratelimit'</span>
+
+<span class="c">// ── Cliente Redis singleton ───────────────────────────────────────────────</span>
+<span class="k">export const</span> redis = <span class="k">new</span> <span class="f">Redis</span>({
+  url:   <span class="k">process</span>.env.<span class="p">UPSTASH_REDIS_REST_URL</span>!,
+  token: <span class="k">process</span>.env.<span class="p">UPSTASH_REDIS_REST_TOKEN</span>!,
+})
+
+<span class="c">// ── Rate limiter para API 42 Intra (10 req/min por utilizador) ────────────</span>
+<span class="k">export const</span> intraRatelimit = <span class="k">new</span> <span class="f">Ratelimit</span>({
+  redis,
+  limiter: <span class="f">Ratelimit</span>.<span class="f">slidingWindow</span>(<span class="n">10</span>, <span class="s">'1 m'</span>),
+  analytics: <span class="k">true</span>,
+  prefix: <span class="s">'ps42:intra'</span>,
+})
+
+<span class="c">// ── Helpers de cache ─────────────────────────────────────────────────────</span>
+<span class="k">export const</span> cache = {
+  <span class="c">// Elegibilidade — 15 minutos</span>
+  eligibility: {
+    key: (userId: <span class="k">string</span>) => <span class="s">`eligibility:</span><span class="v">${userId}</span><span class="s">`</span>,
+    ttl: <span class="n">900</span>,
+  },
+  <span class="c">// Sessão activa — tempo real</span>
+  activeSession: {
+    key: () => <span class="s">'active-session'</span>,
+    ttl: <span class="n">3600</span>,
+  },
+  <span class="c">// Fila actual — 30 segundos</span>
+  queue: {
+    key: () => <span class="s">'queue:current'</span>,
+    ttl: <span class="n">30</span>,
+  },
+}</div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">✅ Checklist — Passo 04</div>
+    <ul class="cl">
+      <li><div class="chk" onclick="tc(this)"></div><span class="ct">Base de dados Upstash criada</span></li>
+      <li><div class="chk" onclick="tc(this)"></div><span class="ct">UPSTASH_REDIS_REST_URL e TOKEN no .env.local</span></li>
+      <li><div class="chk" onclick="tc(this)"></div><span class="ct">lib/redis.ts criado com rate limiter e helpers</span></li>
+    </ul>
+  </div>
+
+  <div class="step-nav">
+    <button class="btn btn-sec" onclick="go('s3')">← Passo 03</button>
+    <button class="btn btn-primary" onclick="go('s5')">Passo 05 →</button>
+  </div>
+</div>
+
+<!-- ── STEP 5: SESSIONS API ── -->
+<div class="step" id="s-s5">
+  <div class="step-head">
+    <div class="step-meta"><span class="pill pill-core">API ROUTE</span><span class="step-pos">PASSO 05 DE 13</span></div>
+    <div class="step-title">API de <em>Sessões</em></div>
+    <p class="step-desc">API Routes para criar, actualizar e consultar sessões. Inclui todas as validações do regulamento: horário, elegibilidade, 30 minutos de antecedência.</p>
+    <div class="step-eta">~25 minutos</div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">5.1 — POST /api/sessions — Criar sessão</div>
+    <div class="code-block">
+      <div class="code-head"><span class="code-file">app/api/sessions/route.ts</span><span class="code-lang">TYPESCRIPT</span></div>
+      <div class="code-body"><span class="k">import</span> { NextRequest, NextResponse } <span class="k">from</span> <span class="s">'next/server'</span>
+<span class="k">import</span> { auth } <span class="k">from</span> <span class="s">'@/lib/auth'</span>
+<span class="k">import</span> { prisma } <span class="k">from</span> <span class="s">'@/lib/prisma'</span>
+<span class="k">import</span> { checkEligibility, isWithinOperatingHours } <span class="k">from</span> <span class="s">'@/lib/eligibility'</span>
+<span class="k">import</span> { pusherServer, CHANNELS, EVENTS } <span class="k">from</span> <span class="s">'@/lib/pusher'</span>
+<span class="k">import</span> { z } <span class="k">from</span> <span class="s">'zod'</span>
+
+<span class="k">const</span> CreateSessionSchema = z.<span class="f">object</span>({
+  gameId: z.<span class="f">string</span>().<span class="f">optional</span>(),
+})
+
+<span class="c">// GET — listar sessões (para staff e fila)</span>
+<span class="k">export async function</span> <span class="f">GET</span>(req: NextRequest) {
+  <span class="k">const</span> session = <span class="k">await</span> <span class="f">auth</span>()
+  <span class="k">if</span> (!session?.user) <span class="k">return</span> NextResponse.<span class="f">json</span>({ error: <span class="s">'Não autenticado'</span> }, { status: <span class="n">401</span> })
+
+  <span class="k">const</span> sessions = <span class="k">await</span> prisma.session.<span class="f">findMany</span>({
+    where: { status: { <span class="p">in</span>: [<span class="s">'PENDING'</span>, <span class="s">'APPROVED'</span>, <span class="s">'ACTIVE'</span>] } },
+    include: {
+      user: { select: { id: <span class="k">true</span>, login: <span class="k">true</span>, displayName: <span class="k">true</span>, avatarUrl: <span class="k">true</span> } },
+      game: { select: { id: <span class="k">true</span>, title: <span class="k">true</span>, coverUrl: <span class="k">true</span> } },
+    },
+    orderBy: { requestedAt: <span class="s">'asc'</span> },
+  })
+
+  <span class="k">return</span> NextResponse.<span class="f">json</span>(sessions)
+}
+
+<span class="c">// POST — criar nova requisição</span>
+<span class="k">export async function</span> <span class="f">POST</span>(req: NextRequest) {
+  <span class="k">const</span> session = <span class="k">await</span> <span class="f">auth</span>()
+  <span class="k">if</span> (!session?.user) <span class="k">return</span> NextResponse.<span class="f">json</span>({ error: <span class="s">'Não autenticado'</span> }, { status: <span class="n">401</span> })
+
+  <span class="c">// 1. Validar horário — Art. 4a</span>
+  <span class="k">const</span> hoursCheck = <span class="f">isWithinOperatingHours</span>()
+  <span class="k">if</span> (!hoursCheck.allowed) {
+    <span class="k">return</span> NextResponse.<span class="f">json</span>({ error: hoursCheck.reason }, { status: <span class="n">403</span> })
+  }
+
+  <span class="c">// 2. Verificar elegibilidade — Art. 3</span>
+  <span class="k">const</span> eligibility = <span class="k">await</span> <span class="f">checkEligibility</span>(
+    session.user.id,
+    session.accessToken
+  )
+  <span class="k">if</span> (!eligibility.isEligible) {
+    <span class="k">return</span> NextResponse.<span class="f">json</span>({
+      error: <span class="s">'Não elegível para usar a PlayStation'</span>,
+      criteria: eligibility.criteria,
+    }, { status: <span class="n">403</span> })
+  }
+
+  <span class="c">// 3. Verificar se já tem sessão activa/pendente</span>
+  <span class="k">const</span> existing = <span class="k">await</span> prisma.session.<span class="f">findFirst</span>({
+    where: {
+      userId: session.user.id,
+      status: { <span class="p">in</span>: [<span class="s">'PENDING'</span>, <span class="s">'APPROVED'</span>, <span class="s">'ACTIVE'</span>] },
+    },
+  })
+  <span class="k">if</span> (existing) {
+    <span class="k">return</span> NextResponse.<span class="f">json</span>({ error: <span class="s">'Já tens uma sessão activa ou pendente'</span> }, { status: <span class="n">409</span> })
+  }
+
+  <span class="c">// 4. Validar body</span>
+  <span class="k">const</span> body = <span class="k">await</span> req.<span class="f">json</span>().<span class="f">catch</span>(() => ({}))
+  <span class="k">const</span> parsed = CreateSessionSchema.<span class="f">safeParse</span>(body)
+  <span class="k">if</span> (!parsed.success) {
+    <span class="k">return</span> NextResponse.<span class="f">json</span>({ error: <span class="s">'Dados inválidos'</span> }, { status: <span class="n">400</span> })
+  }
+
+  <span class="c">// 5. Contar posição na fila</span>
+  <span class="k">const</span> queueCount = <span class="k">await</span> prisma.session.<span class="f">count</span>({
+    where: { status: { <span class="p">in</span>: [<span class="s">'PENDING'</span>, <span class="s">'APPROVED'</span>] } },
+  })
+
+  <span class="c">// 6. Criar sessão</span>
+  <span class="k">const</span> newSession = <span class="k">await</span> prisma.session.<span class="f">create</span>({
+    data: {
+      userId:   session.user.id,
+      gameId:   parsed.data.gameId,
+      status:   <span class="s">'PENDING'</span>,
+      queuePos: queueCount + <span class="n">1</span>,
+    },
+    include: {
+      user: { select: { login: <span class="k">true</span>, displayName: <span class="k">true</span>, avatarUrl: <span class="k">true</span> } },
+      game: { select: { title: <span class="k">true</span> } },
+    },
+  })
+
+  <span class="c">// 7. Notificar staff em tempo real</span>
+  <span class="k">await</span> pusherServer.<span class="f">trigger</span>(CHANNELS.STAFF, EVENTS.NEW_REQUEST, {
+    session: newSession,
+    queueSize: queueCount + <span class="n">1</span>,
+  })
+
+  <span class="c">// 8. Actualizar fila para todos</span>
+  <span class="k">await</span> pusherServer.<span class="f">trigger</span>(CHANNELS.QUEUE, EVENTS.QUEUE_UPDATED, {
+    position: queueCount + <span class="n">1</span>,
+    userId: session.user.id,
+  })
+
+  <span class="k">return</span> NextResponse.<span class="f">json</span>(newSession, { status: <span class="n">201</span> })
+}</div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">5.2 — PATCH /api/sessions/[id] — Actualizar sessão (staff)</div>
+    <div class="code-block">
+      <div class="code-head"><span class="code-file">app/api/sessions/[id]/route.ts</span><span class="code-lang">TYPESCRIPT</span></div>
+      <div class="code-body"><span class="k">import</span> { NextRequest, NextResponse } <span class="k">from</span> <span class="s">'next/server'</span>
+<span class="k">import</span> { auth } <span class="k">from</span> <span class="s">'@/lib/auth'</span>
+<span class="k">import</span> { prisma } <span class="k">from</span> <span class="s">'@/lib/prisma'</span>
+<span class="k">import</span> { pusherServer, CHANNELS, EVENTS } <span class="k">from</span> <span class="s">'@/lib/pusher'</span>
+
+<span class="k">export async function</span> <span class="f">PATCH</span>(
+  req: NextRequest,
+  { params }: { params: { id: <span class="k">string</span> } }
+) {
+  <span class="k">const</span> session = <span class="k">await</span> <span class="f">auth</span>()
+  <span class="k">if</span> (!session?.user) <span class="k">return</span> NextResponse.<span class="f">json</span>({ error: <span class="s">'Não autenticado'</span> }, { status: <span class="n">401</span> })
+
+  <span class="k">const</span> isStaff = [<span class="s">'STAFF'</span>, <span class="s">'ADMIN'</span>].<span class="f">includes</span>(session.user.role)
+  <span class="k">const</span> body = <span class="k">await</span> req.<span class="f">json</span>()
+  <span class="k">const</span> { action } = body  <span class="c">// 'approve' | 'reject' | 'start' | 'end' | 'extend'</span>
+
+  <span class="k">const</span> current = <span class="k">await</span> prisma.session.<span class="f">findUnique</span>({ where: { id: params.id } })
+  <span class="k">if</span> (!current) <span class="k">return</span> NextResponse.<span class="f">json</span>({ error: <span class="s">'Sessão não encontrada'</span> }, { status: <span class="n">404</span> })
+
+  <span class="k">let</span> updateData: Record&lt;<span class="k">string</span>, <span class="k">unknown</span>&gt; = {}
+
+  <span class="k">switch</span> (action) {
+    <span class="k">case</span> <span class="s">'approve'</span>:
+      <span class="k">if</span> (!isStaff) <span class="k">return</span> NextResponse.<span class="f">json</span>({ error: <span class="s">'Sem permissão'</span> }, { status: <span class="n">403</span> })
+      updateData = { status: <span class="s">'APPROVED'</span> }
+      <span class="k">break</span>
+
+    <span class="k">case</span> <span class="s">'start'</span>:
+      <span class="k">if</span> (!isStaff) <span class="k">return</span> NextResponse.<span class="f">json</span>({ error: <span class="s">'Sem permissão'</span> }, { status: <span class="n">403</span> })
+      updateData = { status: <span class="s">'ACTIVE'</span>, startedAt: <span class="k">new</span> <span class="f">Date</span>(), durationMin: <span class="n">60</span> }
+      <span class="k">await</span> pusherServer.<span class="f">trigger</span>(CHANNELS.SESSION, EVENTS.SESSION_STARTED, {
+        sessionId: current.id, userId: current.userId, durationMin: <span class="n">60</span>,
+      })
+      <span class="k">break</span>
+
+    <span class="k">case</span> <span class="s">'end'</span>:
+      updateData = {
+        status: <span class="s">'DONE'</span>,
+        endedAt: <span class="k">new</span> <span class="f">Date</span>(),
+        endedBy: isStaff ? <span class="s">'staff'</span> : <span class="s">'cadete'</span>,
+      }
+      <span class="k">await</span> pusherServer.<span class="f">trigger</span>(CHANNELS.SESSION, EVENTS.SESSION_ENDED, {
+        sessionId: current.id,
+      })
+      <span class="k">await</span> pusherServer.<span class="f">trigger</span>(CHANNELS.QUEUE, EVENTS.QUEUE_UPDATED, {})
+      <span class="k">break</span>
+
+    <span class="k">case</span> <span class="s">'extend'</span>:
+      <span class="k">if</span> (!isStaff) <span class="k">return</span> NextResponse.<span class="f">json</span>({ error: <span class="s">'Sem permissão'</span> }, { status: <span class="n">403</span> })
+      updateData = { extended: <span class="k">true</span>, durationMin: <span class="n">120</span> }
+      <span class="k">break</span>
+
+    <span class="k">case</span> <span class="s">'reject'</span>:
+      <span class="k">if</span> (!isStaff) <span class="k">return</span> NextResponse.<span class="f">json</span>({ error: <span class="s">'Sem permissão'</span> }, { status: <span class="n">403</span> })
+      updateData = { status: <span class="s">'REJECTED'</span>, staffNote: body.note }
+      <span class="k">break</span>
+
+    <span class="k">default</span>:
+      <span class="k">return</span> NextResponse.<span class="f">json</span>({ error: <span class="s">'Acção inválida'</span> }, { status: <span class="n">400</span> })
+  }
+
+  <span class="k">const</span> updated = <span class="k">await</span> prisma.session.<span class="f">update</span>({
+    where: { id: params.id },
+    data: updateData,
+  })
+
+  <span class="k">return</span> NextResponse.<span class="f">json</span>(updated)
+}</div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">✅ Checklist — Passo 05</div>
+    <ul class="cl">
+      <li><div class="chk" onclick="tc(this)"></div><span class="ct">app/api/sessions/route.ts criado (GET + POST)</span></li>
+      <li><div class="chk" onclick="tc(this)"></div><span class="ct">app/api/sessions/[id]/route.ts criado (PATCH)</span></li>
+      <li><div class="chk" onclick="tc(this)"></div><span class="ct">Validações de horário e elegibilidade no POST</span></li>
+    </ul>
+  </div>
+
+  <div class="step-nav">
+    <button class="btn btn-sec" onclick="go('s4')">← Passo 04</button>
+    <button class="btn btn-primary" onclick="go('s6')">Passo 06 →</button>
+  </div>
+</div>
+
+<!-- ── STEP 6: QUEUE API ── -->
+<div class="step" id="s-s6">
+  <div class="step-head">
+    <div class="step-meta"><span class="pill pill-rt">TEMPO REAL</span><span class="step-pos">PASSO 06 DE 13</span></div>
+    <div class="step-title">API da <em>Fila</em></div>
+    <p class="step-desc">Endpoint que retorna o estado completo da fila com dados enriquecidos. Usado pelo frontend para mostrar posições, tempo de espera estimado e sessão activa.</p>
+    <div class="step-eta">~20 minutos</div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">6.1 — GET /api/queue</div>
+    <div class="code-block">
+      <div class="code-head"><span class="code-file">app/api/queue/route.ts</span><span class="code-lang">TYPESCRIPT</span></div>
+      <div class="code-body"><span class="k">import</span> { NextResponse } <span class="k">from</span> <span class="s">'next/server'</span>
+<span class="k">import</span> { auth } <span class="k">from</span> <span class="s">'@/lib/auth'</span>
+<span class="k">import</span> { prisma } <span class="k">from</span> <span class="s">'@/lib/prisma'</span>
+
+<span class="k">export async function</span> <span class="f">GET</span>() {
+  <span class="k">const</span> session = <span class="k">await</span> <span class="f">auth</span>()
+  <span class="k">if</span> (!session?.user) <span class="k">return</span> NextResponse.<span class="f">json</span>({ error: <span class="s">'Não autenticado'</span> }, { status: <span class="n">401</span> })
+
+  <span class="c">// Sessão activa</span>
+  <span class="k">const</span> activeSession = <span class="k">await</span> prisma.session.<span class="f">findFirst</span>({
+    where: { status: <span class="s">'ACTIVE'</span> },
+    include: {
+      user: { select: { login: <span class="k">true</span>, displayName: <span class="k">true</span>, avatarUrl: <span class="k">true</span> } },
+      game: { select: { title: <span class="k">true</span>, coverUrl: <span class="k">true</span> } },
+    },
+  })
+
+  <span class="c">// Fila de espera (pendentes + aprovados)</span>
+  <span class="k">const</span> queue = <span class="k">await</span> prisma.session.<span class="f">findMany</span>({
+    where: { status: { <span class="p">in</span>: [<span class="s">'PENDING'</span>, <span class="s">'APPROVED'</span>] } },
+    include: {
+      user: { select: { login: <span class="k">true</span>, displayName: <span class="k">true</span>, avatarUrl: <span class="k">true</span> } },
+      game: { select: { title: <span class="k">true</span> } },
+    },
+    orderBy: { requestedAt: <span class="s">'asc'</span> },
+  })
+
+  <span class="c">// Posição do utilizador actual</span>
+  <span class="k">const</span> myPosition = queue.<span class="f">findIndex</span>(s => s.userId === session.user.id) + <span class="n">1</span>
+
+  <span class="c">// Tempo estimado de espera (60 min por sessão)</span>
+  <span class="k">const</span> estimatedWait = activeSession
+    ? (() => {
+        <span class="k">if</span> (!activeSession.startedAt) <span class="k">return</span> myPosition * <span class="n">60</span>
+        <span class="k">const</span> elapsed = (<span class="f">Date</span>.<span class="f">now</span>() - <span class="k">new</span> <span class="f">Date</span>(activeSession.startedAt).<span class="f">getTime</span>()) / <span class="n">60000</span>
+        <span class="k">const</span> remaining = <span class="f">Math</span>.<span class="f">max</span>(<span class="n">0</span>, <span class="n">60</span> - elapsed)
+        <span class="k">return</span> remaining + (<span class="f">Math</span>.<span class="f">max</span>(<span class="n">0</span>, myPosition - <span class="n">1</span>) * <span class="n">60</span>)
+      })()
+    : myPosition * <span class="n">60</span>
+
+  <span class="k">return</span> NextResponse.<span class="f">json</span>({
+    activeSession,
+    queue,
+    myPosition: myPosition > <span class="n">0</span> ? myPosition : <span class="k">null</span>,
+    estimatedWaitMin: <span class="f">Math</span>.<span class="f">round</span>(estimatedWait),
+    queueSize: queue.length,
+    consoleStatus: activeSession ? <span class="s">'occupied'</span> : queue.length > <span class="n">0</span> ? <span class="s">'queued'</span> : <span class="s">'free'</span>,
+  })
+}</div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">✅ Checklist — Passo 06</div>
+    <ul class="cl">
+      <li><div class="chk" onclick="tc(this)"></div><span class="ct">app/api/queue/route.ts criado</span></li>
+      <li><div class="chk" onclick="tc(this)"></div><span class="ct">Retorna sessão activa, fila, posição e tempo estimado</span></li>
+    </ul>
+  </div>
+
+  <div class="step-nav">
+    <button class="btn btn-sec" onclick="go('s5')">← Passo 05</button>
+    <button class="btn btn-primary" onclick="go('s7')">Passo 07 →</button>
+  </div>
+</div>
+
+<!-- ── STEP 7: ELIGIBILITY API ── -->
+<div class="step" id="s-s7">
+  <div class="step-head">
+    <div class="step-meta"><span class="pill pill-api">API ROUTE</span><span class="step-pos">PASSO 07 DE 13</span></div>
+    <div class="step-title">API de <em>Elegibilidade</em></div>
+    <p class="step-desc">Endpoint público (para o utilizador autenticado) que retorna o resultado detalhado da verificação de elegibilidade — critério a critério.</p>
+    <div class="step-eta">~20 minutos</div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">7.1 — GET /api/eligibility</div>
+    <div class="code-block">
+      <div class="code-head"><span class="code-file">app/api/eligibility/route.ts</span><span class="code-lang">TYPESCRIPT</span></div>
+      <div class="code-body"><span class="k">import</span> { NextRequest, NextResponse } <span class="k">from</span> <span class="s">'next/server'</span>
+<span class="k">import</span> { auth } <span class="k">from</span> <span class="s">'@/lib/auth'</span>
+<span class="k">import</span> { checkEligibility, isWithinOperatingHours } <span class="k">from</span> <span class="s">'@/lib/eligibility'</span>
+
+<span class="k">export async function</span> <span class="f">GET</span>(req: NextRequest) {
+  <span class="k">const</span> session = <span class="k">await</span> <span class="f">auth</span>()
+  <span class="k">if</span> (!session?.user) {
+    <span class="k">return</span> NextResponse.<span class="f">json</span>({ error: <span class="s">'Não autenticado'</span> }, { status: <span class="n">401</span> })
+  }
+
+  <span class="k">const</span> [eligibility, hours] = <span class="k">await</span> <span class="f">Promise</span>.<span class="f">all</span>([
+    <span class="f">checkEligibility</span>(session.user.id, session.accessToken),
+    Promise.<span class="f">resolve</span>(<span class="f">isWithinOperatingHours</span>()),
+  ])
+
+  <span class="k">return</span> NextResponse.<span class="f">json</span>({
+    ...eligibility,
+    operatingHours: hours,
+    canRequestNow: eligibility.isEligible && hours.allowed,
+  })
+}
+
+<span class="c">// DELETE — invalidar cache (forçar re-check)</span>
+<span class="k">export async function</span> <span class="f">DELETE</span>(req: NextRequest) {
+  <span class="k">const</span> session = <span class="k">await</span> <span class="f">auth</span>()
+  <span class="k">if</span> (!session?.user) <span class="k">return</span> NextResponse.<span class="f">json</span>({ error: <span class="s">'Não autenticado'</span> }, { status: <span class="n">401</span> })
+
+  <span class="k">const</span> { redis } = <span class="k">await</span> <span class="k">import</span>(<span class="s">'@/lib/redis'</span>)
+  <span class="k">await</span> redis.<span class="f">del</span>(<span class="s">`eligibility:</span><span class="v">${session.user.id}</span><span class="s">`</span>)
+
+  <span class="k">return</span> NextResponse.<span class="f">json</span>({ invalidated: <span class="k">true</span> })
+}</div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">✅ Checklist — Passo 07</div>
+    <ul class="cl">
+      <li><div class="chk" onclick="tc(this)"></div><span class="ct">app/api/eligibility/route.ts criado (GET + DELETE)</span></li>
+      <li><div class="chk" onclick="tc(this)"></div><span class="ct">Retorna critérios, horário e canRequestNow combinado</span></li>
+    </ul>
+  </div>
+
+  <div class="step-nav">
+    <button class="btn btn-sec" onclick="go('s6')">← Passo 06</button>
+    <button class="btn btn-primary" onclick="go('s8')">Passo 08 →</button>
+  </div>
+</div>
+
+<!-- ── STEP 8: CADETE DASHBOARD ── -->
+<div class="step" id="s-s8">
+  <div class="step-head">
+    <div class="step-meta"><span class="pill pill-ui">INTERFACE</span><span class="step-pos">PASSO 08 DE 13</span></div>
+    <div class="step-title">Dashboard do <em>Cadete</em></div>
+    <p class="step-desc">A página principal do cadete. Mostra estado de elegibilidade em tempo real, sessão activa, posição na fila e acção principal (pedir / ver fila).</p>
+    <div class="step-eta">~30 minutos</div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">8.1 — app/(cadete)/dashboard/page.tsx</div>
+    <div class="code-block">
+      <div class="code-head"><span class="code-file">app/(cadete)/dashboard/page.tsx</span><span class="code-lang">TYPESCRIPT</span></div>
+      <div class="code-body"><span class="k">import</span> { auth } <span class="k">from</span> <span class="s">'@/lib/auth'</span>
+<span class="k">import</span> { redirect } <span class="k">from</span> <span class="s">'next/navigation'</span>
+<span class="k">import</span> { checkEligibility, isWithinOperatingHours } <span class="k">from</span> <span class="s">'@/lib/eligibility'</span>
+<span class="k">import</span> { prisma } <span class="k">from</span> <span class="s">'@/lib/prisma'</span>
+<span class="k">import</span> EligibilityCard <span class="k">from</span> <span class="s">'@/components/cadete/EligibilityCard'</span>
+<span class="k">import</span> SessionCard <span class="k">from</span> <span class="s">'@/components/cadete/SessionCard'</span>
+<span class="k">import</span> QueueCard <span class="k">from</span> <span class="s">'@/components/cadete/QueueCard'</span>
+
+<span class="k">export default async function</span> <span class="f">CadeteDashboard</span>() {
+  <span class="k">const</span> session = <span class="k">await</span> <span class="f">auth</span>()
+  <span class="k">if</span> (!session?.user) <span class="f">redirect</span>(<span class="s">'/login'</span>)
+
+  <span class="c">// Buscar dados em paralelo</span>
+  <span class="k">const</span> [eligibility, hours, mySession, queueCount] = <span class="k">await</span> <span class="f">Promise</span>.<span class="f">all</span>([
+    <span class="f">checkEligibility</span>(session.user.id, session.accessToken),
+    <span class="f">Promise</span>.<span class="f">resolve</span>(<span class="f">isWithinOperatingHours</span>()),
+    prisma.session.<span class="f">findFirst</span>({
+      where: { userId: session.user.id, status: { <span class="p">in</span>: [<span class="s">'PENDING'</span>, <span class="s">'APPROVED'</span>, <span class="s">'ACTIVE'</span>] } },
+      include: { game: <span class="k">true</span> },
+    }),
+    prisma.session.<span class="f">count</span>({
+      where: { status: { <span class="p">in</span>: [<span class="s">'PENDING'</span>, <span class="s">'APPROVED'</span>] } },
+    }),
+  ])
+
+  <span class="k">return</span> (
+    &lt;<span class="f">div</span> className=<span class="s">"min-h-screen p-6 md:p-10"</span>&gt;
+      &lt;<span class="c">{/* Header */}</span>&gt;
+      &lt;<span class="f">div</span> className=<span class="s">"mb-10"</span>&gt;
+        &lt;<span class="f">p</span> className=<span class="s">"font-mono text-xs text-[rgb(var(--muted-fg))] tracking-widest uppercase mb-1"</span>&gt;
+          Bem-vindo de volta
+        &lt;/<span class="f">p</span>&gt;
+        &lt;<span class="f">h1</span> className=<span class="s">"font-display text-3xl font-black tracking-tight"</span>&gt;
+          {session.user.name}
+          &lt;<span class="f">span</span> className=<span class="s">"text-teal-400 ml-2 text-xl font-mono"</span>&gt;
+            @{session.user.login}
+          &lt;/<span class="f">span</span>&gt;
+        &lt;/<span class="f">h1</span>&gt;
+      &lt;/<span class="f">div</span>&gt;
+
+      &lt;<span class="c">{/* Grid principal */}</span>&gt;
+      &lt;<span class="f">div</span> className=<span class="s">"grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"</span>&gt;
+
+        &lt;<span class="c">{/* Card de elegibilidade */}</span>&gt;
+        &lt;<span class="f">EligibilityCard</span>
+          eligibility={eligibility}
+          hours={hours}
+          className=<span class="s">"lg:col-span-2"</span>
+        /&gt;
+
+        &lt;<span class="c">{/* Card de sessão / fila */}</span>&gt;
+        {mySession ? (
+          &lt;<span class="f">SessionCard</span> session={mySession} /&gt;
+        ) : (
+          &lt;<span class="f">QueueCard</span>
+            queueCount={queueCount}
+            canRequest={eligibility.isEligible && hours.allowed}
+          /&gt;
+        )}
+
+      &lt;/<span class="f">div</span>&gt;
+    &lt;/<span class="f">div</span>&gt;
+  )
+}</div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">8.2 — Componente EligibilityCard</div>
+    <div class="code-block">
+      <div class="code-head"><span class="code-file">components/cadete/EligibilityCard.tsx</span><span class="code-lang">TYPESCRIPT</span></div>
+      <div class="code-body"><span class="s">'use client'</span>
+
+<span class="k">import type</span> { EligibilityResult } <span class="k">from</span> <span class="s">'@/lib/eligibility'</span>
+
+<span class="k">interface</span> <span class="f">Props</span> {
+  eligibility: EligibilityResult
+  hours: { allowed: <span class="k">boolean</span>; reason?: <span class="k">string</span> }
+  className?: <span class="k">string</span>
+}
+
+<span class="k">export default function</span> <span class="f">EligibilityCard</span>({ eligibility, hours, className }: Props) {
+  <span class="k">const</span> { isEligible, criteria } = eligibility
+
+  <span class="k">return</span> (
+    &lt;<span class="f">div</span> className={<span class="s">`bg-surface border border-[rgb(var(--border))] rounded-sm p-6 </span><span class="v">${className}</span><span class="s">`</span>}&gt;
+      &lt;<span class="c">{/* Status principal */}</span>&gt;
+      &lt;<span class="f">div</span> className=<span class="s">"flex items-center justify-between mb-6"</span>&gt;
+        &lt;<span class="f">div</span>&gt;
+          &lt;<span class="f">p</span> className=<span class="s">"font-mono text-[10px] text-[rgb(var(--muted-fg))] tracking-widest uppercase mb-1"</span>&gt;
+            Estado de Acesso
+          &lt;/<span class="f">p</span>&gt;
+          &lt;<span class="f">div</span> className=<span class="s">"flex items-center gap-3"</span>&gt;
+            &lt;<span class="f">div</span> className={<span class="s">`w-3 h-3 rounded-full </span><span class="v">${isEligible ? 'bg-green-400 animate-pulse' : 'bg-red-400'}</span><span class="s">`</span>} /&gt;
+            &lt;<span class="f">span</span> className={<span class="s">`font-display text-xl font-bold </span><span class="v">${isEligible ? 'text-green-400' : 'text-red-400'}</span><span class="s">`</span>}&gt;
+              {isEligible ? <span class="s">'ELEGÍVEL'</span> : <span class="s">'NÃO ELEGÍVEL'</span>}
+            &lt;/<span class="f">span</span>&gt;
+          &lt;/<span class="f">div</span>&gt;
+        &lt;/<span class="f">div</span>&gt;
+
+        &lt;<span class="c">{/* Horário */}</span>&gt;
+        &lt;<span class="f">div</span> className=<span class="s">"text-right"</span>&gt;
+          &lt;<span class="f">p</span> className=<span class="s">"font-mono text-[10px] text-[rgb(var(--muted-fg))] tracking-widest uppercase mb-1"</span>&gt;
+            Horário
+          &lt;/<span class="f">p</span>&gt;
+          &lt;<span class="f">span</span> className={<span class="s">`font-mono text-sm </span><span class="v">${hours.allowed ? 'text-green-400' : 'text-orange-400'}</span><span class="s">`</span>}&gt;
+            {hours.allowed ? <span class="s">'Em funcionamento'</span> : <span class="s">'Fora de horário'</span>}
+          &lt;/<span class="f">span</span>&gt;
+        &lt;/<span class="f">div</span>&gt;
+      &lt;/<span class="f">div</span>&gt;
+
+      &lt;<span class="c">{/* Critérios — Art. 3 */}</span>&gt;
+      &lt;<span class="f">div</span> className=<span class="s">"grid grid-cols-2 gap-2"</span>&gt;
+        {criteria.<span class="f">map</span>((c) => (
+          &lt;<span class="f">div</span>
+            key={c.id}
+            className={<span class="s">`flex items-start gap-2 p-3 rounded-sm border text-xs
+              </span><span class="v">${c.passed
+                ? 'border-green-500/20 bg-green-500/5'
+                : 'border-red-500/20 bg-red-500/5'
+              }</span><span class="s">`</span>}
+          &gt;
+            &lt;<span class="f">span</span> className=<span class="s">"text-base leading-none"</span>&gt;{c.passed ? <span class="s">'✓'</span> : <span class="s">'✗'</span>}&lt;/<span class="f">span</span>&gt;
+            &lt;<span class="f">div</span>&gt;
+              &lt;<span class="f">p</span> className={<span class="s">`font-medium </span><span class="v">${c.passed ? 'text-green-300' : 'text-red-300'}</span><span class="s">`</span>}&gt;
+                {c.label}
+              &lt;/<span class="f">p</span>&gt;
+              &lt;<span class="f">p</span> className=<span class="s">"text-[rgb(var(--muted-fg))] font-mono text-[10px] mt-0.5"</span>&gt;
+                {c.article}
+              &lt;/<span class="f">p</span>&gt;
+              {!c.passed && c.reason && (
+                &lt;<span class="f">p</span> className=<span class="s">"text-red-400/80 mt-1 text-[10px]"</span>&gt;{c.reason}&lt;/<span class="f">p</span>&gt;
+              )}
+            &lt;/<span class="f">div</span>&gt;
+          &lt;/<span class="f">div</span>&gt;
+        ))}
+      &lt;/<span class="f">div</span>&gt;
+    &lt;/<span class="f">div</span>&gt;
+  )
+}</div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">✅ Checklist — Passo 08</div>
+    <ul class="cl">
+      <li><div class="chk" onclick="tc(this)"></div><span class="ct">app/(cadete)/dashboard/page.tsx criado</span></li>
+      <li><div class="chk" onclick="tc(this)"></div><span class="ct">components/cadete/EligibilityCard.tsx criado</span></li>
+      <li><div class="chk" onclick="tc(this)"></div><span class="ct">Dashboard renderiza os 8 critérios de elegibilidade</span></li>
+    </ul>
+  </div>
+
+  <div class="step-nav">
+    <button class="btn btn-sec" onclick="go('s7')">← Passo 07</button>
+    <button class="btn btn-primary" onclick="go('s9')">Passo 09 →</button>
+  </div>
+</div>
+
+<!-- ── STEP 9: REQUISIÇÃO ── -->
+<div class="step" id="s-s9">
+  <div class="step-head">
+    <div class="step-meta"><span class="pill pill-ui">INTERFACE</span><span class="step-pos">PASSO 09 DE 13</span></div>
+    <div class="step-title">Formulário de <em>Requisição</em></div>
+    <p class="step-desc">Página onde o cadete faz o pedido de sessão. Valida elegibilidade antes de mostrar o formulário, lista jogos aprovados e submete para a API.</p>
+    <div class="step-eta">~25 minutos</div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">9.1 — app/(cadete)/requisicao/page.tsx</div>
+    <div class="code-block">
+      <div class="code-head"><span class="code-file">app/(cadete)/requisicao/page.tsx</span><span class="code-lang">TYPESCRIPT</span></div>
+      <div class="code-body"><span class="k">import</span> { auth } <span class="k">from</span> <span class="s">'@/lib/auth'</span>
+<span class="k">import</span> { redirect } <span class="k">from</span> <span class="s">'next/navigation'</span>
+<span class="k">import</span> { checkEligibility, isWithinOperatingHours } <span class="k">from</span> <span class="s">'@/lib/eligibility'</span>
+<span class="k">import</span> { prisma } <span class="k">from</span> <span class="s">'@/lib/prisma'</span>
+<span class="k">import</span> RequisicaoForm <span class="k">from</span> <span class="s">'@/components/cadete/RequisicaoForm'</span>
+
+<span class="k">export default async function</span> <span class="f">RequisicaoPage</span>() {
+  <span class="k">const</span> session = <span class="k">await</span> <span class="f">auth</span>()
+  <span class="k">if</span> (!session?.user) <span class="f">redirect</span>(<span class="s">'/login'</span>)
+
+  <span class="k">const</span> [eligibility, hours, games, myPending] = <span class="k">await</span> <span class="f">Promise</span>.<span class="f">all</span>([
+    <span class="f">checkEligibility</span>(session.user.id, session.accessToken),
+    <span class="f">Promise</span>.<span class="f">resolve</span>(<span class="f">isWithinOperatingHours</span>()),
+    prisma.game.<span class="f">findMany</span>({ where: { isApproved: <span class="k">true</span> }, orderBy: { title: <span class="s">'asc'</span> } }),
+    prisma.session.<span class="f">findFirst</span>({
+      where: { userId: session.user.id, status: { <span class="p">in</span>: [<span class="s">'PENDING'</span>, <span class="s">'APPROVED'</span>, <span class="s">'ACTIVE'</span>] } },
+    }),
+  ])
+
+  <span class="c">// Se já tem sessão activa, redireciona para a fila</span>
+  <span class="k">if</span> (myPending) <span class="f">redirect</span>(<span class="s">'/fila'</span>)
+
+  <span class="k">const</span> canRequest = eligibility.isEligible && hours.allowed
+
+  <span class="k">return</span> (
+    &lt;<span class="f">div</span> className=<span class="s">"min-h-screen p-6 md:p-10 max-w-2xl"</span>&gt;
+      &lt;<span class="f">div</span> className=<span class="s">"mb-8"</span>&gt;
+        &lt;<span class="f">p</span> className=<span class="s">"font-mono text-[10px] text-[rgb(var(--muted-fg))] tracking-widest uppercase mb-1"</span>&gt;
+          Artigo 5.º — Processo de Pedido
+        &lt;/<span class="f">p</span>&gt;
+        &lt;<span class="f">h1</span> className=<span class="s">"font-display text-3xl font-black tracking-tight"</span>&gt;
+          Requisitar <span class="f">Sessão</span>
+        &lt;/<span class="f">h1</span>&gt;
+        &lt;<span class="f">p</span> className=<span class="s">"text-[rgb(var(--muted-fg))] mt-2 text-sm"</span>&gt;
+          O pedido deve ser feito com mínimo 30 minutos de antecedência. (Art. 4c)
+        &lt;/<span class="f">p</span>&gt;
+      &lt;/<span class="f">div</span>&gt;
+
+      {!canRequest ? (
+        &lt;<span class="f">div</span> className=<span class="s">"border border-red-500/30 bg-red-500/5 p-6 rounded-sm"</span>&gt;
+          &lt;<span class="f">p</span> className=<span class="s">"text-red-400 font-mono text-sm"</span>&gt;
+            {!hours.allowed ? hours.reason : <span class="s">'Não elegível para requisitar sessão. Verifica os critérios no teu dashboard.'</span>}
+          &lt;/<span class="f">p</span>&gt;
+        &lt;/<span class="f">div</span>&gt;
+      ) : (
+        &lt;<span class="f">RequisicaoForm</span> games={games} /&gt;
+      )}
+    &lt;/<span class="f">div</span>&gt;
+  )
+}</div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">9.2 — Componente RequisicaoForm (client)</div>
+    <div class="code-block">
+      <div class="code-head"><span class="code-file">components/cadete/RequisicaoForm.tsx</span><span class="code-lang">TYPESCRIPT</span></div>
+      <div class="code-body"><span class="s">'use client'</span>
+
+<span class="k">import</span> { useState } <span class="k">from</span> <span class="s">'react'</span>
+<span class="k">import</span> { useRouter } <span class="k">from</span> <span class="s">'next/navigation'</span>
+<span class="k">import type</span> { Game } <span class="k">from</span> <span class="s">'@prisma/client'</span>
+
+<span class="k">interface</span> <span class="f">Props</span> { games: <span class="f">Game</span>[] }
+
+<span class="k">export default function</span> <span class="f">RequisicaoForm</span>({ games }: Props) {
+  <span class="k">const</span> router = <span class="f">useRouter</span>()
+  <span class="k">const</span> [gameId, setGameId] = <span class="f">useState</span>(<span class="s">''</span>)
+  <span class="k">const</span> [loading, setLoading] = <span class="f">useState</span>(<span class="k">false</span>)
+  <span class="k">const</span> [error, setError] = <span class="f">useState</span>(<span class="s">''</span>)
+
+  <span class="k">async function</span> <span class="f">handleSubmit</span>() {
+    <span class="f">setLoading</span>(<span class="k">true</span>); <span class="f">setError</span>(<span class="s">''</span>)
+
+    <span class="k">const</span> res = <span class="k">await</span> <span class="f">fetch</span>(<span class="s">'/api/sessions'</span>, {
+      method: <span class="s">'POST'</span>,
+      headers: { <span class="s">'Content-Type'</span>: <span class="s">'application/json'</span> },
+      body: <span class="f">JSON</span>.<span class="f">stringify</span>({ gameId: gameId || <span class="k">undefined</span> }),
+    })
+
+    <span class="k">if</span> (res.ok) {
+      router.<span class="f">push</span>(<span class="s">'/fila'</span>)
+    } <span class="k">else</span> {
+      <span class="k">const</span> data = <span class="k">await</span> res.<span class="f">json</span>()
+      <span class="f">setError</span>(data.error || <span class="s">'Erro ao submeter pedido'</span>)
+      <span class="f">setLoading</span>(<span class="k">false</span>)
+    }
+  }
+
+  <span class="k">return</span> (
+    &lt;<span class="f">div</span> className=<span class="s">"space-y-6"</span>&gt;
+      &lt;<span class="c">{/* Seleccionar jogo */}</span>&gt;
+      &lt;<span class="f">div</span>&gt;
+        &lt;<span class="f">label</span> className=<span class="s">"block font-mono text-[10px] text-[rgb(var(--muted-fg))] tracking-widest uppercase mb-3"</span>&gt;
+          Jogo (opcional)
+        &lt;/<span class="f">label</span>&gt;
+        &lt;<span class="f">select</span>
+          value={gameId}
+          onChange={(e) => <span class="f">setGameId</span>(e.target.value)}
+          className=<span class="s">"w-full bg-surface-2 border border-[rgb(var(--border))]
+                     text-sm p-3 font-mono text-[rgb(var(--fg))]
+                     focus:border-teal-400 focus:outline-none"</span>
+        &gt;
+          &lt;<span class="f">option</span> value=<span class="s">""</span>&gt;Sem preferência&lt;/<span class="f">option</span>&gt;
+          {games.<span class="f">map</span>(g => (
+            &lt;<span class="f">option</span> key={g.id} value={g.id}&gt;{g.title}&lt;/<span class="f">option</span>&gt;
+          ))}
+        &lt;/<span class="f">select</span>&gt;
+      &lt;/<span class="f">div</span>&gt;
+
+      &lt;<span class="c">{/* Nota regulamentar */}</span>&gt;
+      &lt;<span class="f">div</span> className=<span class="s">"border border-[rgb(var(--border))] p-4 text-xs text-[rgb(var(--muted-fg))] font-mono space-y-1"</span>&gt;
+        &lt;<span class="f">p</span>&gt;→ Deves levantar a consola na recepção com o teu ID. (Art. 4g)&lt;/<span class="f">p</span>&gt;
+        &lt;<span class="f">p</span>&gt;→ Tempo máximo de sessão: 1 hora. (Art. 4f)&lt;/<span class="f">p</span>&gt;
+        &lt;<span class="f">p</span>&gt;→ Devolve a consola em perfeitas condições. (Art. 4h)&lt;/<span class="f">p</span>&gt;
+      &lt;/<span class="f">div</span>&gt;
+
+      {error && (
+        &lt;<span class="f">p</span> className=<span class="s">"text-red-400 text-sm font-mono"</span>&gt;{error}&lt;/<span class="f">p</span>&gt;
+      )}
+
+      &lt;<span class="f">button</span>
+        onClick={handleSubmit}
+        disabled={loading}
+        className=<span class="s">"w-full bg-teal-400 text-[rgb(var(--bg))] font-bold
+                   font-mono text-sm py-4 tracking-wider
+                   hover:bg-teal-300 transition-colors
+                   disabled:opacity-50 disabled:cursor-not-allowed"</span>
+      &gt;
+        {loading ? <span class="s">'A SUBMETER...'</span> : <span class="s">'SUBMETER PEDIDO →'</span>}
+      &lt;/<span class="f">button</span>&gt;
+    &lt;/<span class="f">div</span>&gt;
+  )
+}</div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">✅ Checklist — Passo 09</div>
+    <ul class="cl">
+      <li><div class="chk" onclick="tc(this)"></div><span class="ct">app/(cadete)/requisicao/page.tsx criado</span></li>
+      <li><div class="chk" onclick="tc(this)"></div><span class="ct">components/cadete/RequisicaoForm.tsx criado</span></li>
+      <li><div class="chk" onclick="tc(this)"></div><span class="ct">Bloqueia acesso se não elegível ou fora de horário</span></li>
+    </ul>
+  </div>
+
+  <div class="step-nav">
+    <button class="btn btn-sec" onclick="go('s8')">← Passo 08</button>
+    <button class="btn btn-primary" onclick="go('s10')">Passo 10 →</button>
+  </div>
+</div>
+
+<!-- ── STEP 10: FILA REAL-TIME ── -->
+<div class="step" id="s-s10">
+  <div class="step-head">
+    <div class="step-meta"><span class="pill pill-rt">TEMPO REAL</span><span class="step-pos">PASSO 10 DE 13</span></div>
+    <div class="step-title">Fila em <em>Tempo Real</em></div>
+    <p class="step-desc">Componente client que usa Pusher para actualizar a fila automaticamente, mostrar o timer da sessão activa e notificar quando é a vez do cadete.</p>
+    <div class="step-eta">~25 minutos</div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">10.1 — app/(cadete)/fila/page.tsx + componente</div>
+    <div class="code-block">
+      <div class="code-head"><span class="code-file">components/cadete/QueueLive.tsx</span><span class="code-lang">TYPESCRIPT</span></div>
+      <div class="code-body"><span class="s">'use client'</span>
+
+<span class="k">import</span> { useEffect, useState, useCallback } <span class="k">from</span> <span class="s">'react'</span>
+<span class="k">import</span> { pusherClient, CHANNELS, EVENTS } <span class="k">from</span> <span class="s">'@/lib/pusher'</span>
+
+<span class="k">interface</span> <span class="f">QueueState</span> {
+  activeSession: <span class="k">any</span> | <span class="k">null</span>
+  queue: <span class="k">any</span>[]
+  myPosition: <span class="k">number</span> | <span class="k">null</span>
+  estimatedWaitMin: <span class="k">number</span>
+  consoleStatus: <span class="s">'free'</span> | <span class="s">'occupied'</span> | <span class="s">'queued'</span>
+}
+
+<span class="k">export default function</span> <span class="f">QueueLive</span>({ userId }: { userId: <span class="k">string</span> }) {
+  <span class="k">const</span> [state, setState] = <span class="f">useState</span>&lt;<span class="f">QueueState</span> | <span class="k">null</span>&gt;(<span class="k">null</span>)
+  <span class="k">const</span> [timer, setTimer] = <span class="f">useState</span>(<span class="n">0</span>)   <span class="c">// segundos restantes</span>
+  <span class="k">const</span> [loading, setLoading] = <span class="f">useState</span>(<span class="k">true</span>)
+
+  <span class="k">const</span> fetchQueue = <span class="f">useCallback</span>(<span class="k">async</span> () => {
+    <span class="k">const</span> res = <span class="k">await</span> <span class="f">fetch</span>(<span class="s">'/api/queue'</span>)
+    <span class="k">if</span> (res.ok) {
+      <span class="k">const</span> data = <span class="k">await</span> res.<span class="f">json</span>()
+      setState(data)
+      <span class="c">// Inicializar timer se há sessão activa</span>
+      <span class="k">if</span> (data.activeSession?.startedAt) {
+        <span class="k">const</span> elapsed = (<span class="f">Date</span>.<span class="f">now</span>() - <span class="k">new</span> <span class="f">Date</span>(data.activeSession.startedAt).<span class="f">getTime</span>()) / <span class="n">1000</span>
+        <span class="k">const</span> total = (data.activeSession.durationMin || <span class="n">60</span>) * <span class="n">60</span>
+        <span class="f">setTimer</span>(<span class="f">Math</span>.<span class="f">max</span>(<span class="n">0</span>, total - elapsed))
+      }
+    }
+    <span class="f">setLoading</span>(<span class="k">false</span>)
+  }, [])
+
+  <span class="c">// Fetch inicial e subscrição Pusher</span>
+  <span class="f">useEffect</span>(() => {
+    <span class="f">fetchQueue</span>()
+
+    <span class="k">const</span> channel = pusherClient.<span class="f">subscribe</span>(CHANNELS.QUEUE)
+    channel.<span class="f">bind</span>(EVENTS.QUEUE_UPDATED, () => <span class="f">fetchQueue</span>())
+    channel.<span class="f">bind</span>(EVENTS.SESSION_STARTED, () => <span class="f">fetchQueue</span>())
+    channel.<span class="f">bind</span>(EVENTS.SESSION_ENDED, () => <span class="f">fetchQueue</span>())
+
+    <span class="k">return</span> () => pusherClient.<span class="f">unsubscribe</span>(CHANNELS.QUEUE)
+  }, [fetchQueue])
+
+  <span class="c">// Timer countdown</span>
+  <span class="f">useEffect</span>(() => {
+    <span class="k">if</span> (timer <= <span class="n">0</span>) <span class="k">return</span>
+    <span class="k">const</span> interval = <span class="f">setInterval</span>(() => <span class="f">setTimer</span>(t => <span class="f">Math</span>.<span class="f">max</span>(<span class="n">0</span>, t - <span class="n">1</span>)), <span class="n">1000</span>)
+    <span class="k">return</span> () => <span class="f">clearInterval</span>(interval)
+  }, [timer])
+
+  <span class="k">const</span> <span class="f">fmt</span> = (s: <span class="k">number</span>) => {
+    <span class="k">const</span> m = <span class="f">Math</span>.<span class="f">floor</span>(s / <span class="n">60</span>)
+    <span class="k">const</span> sec = <span class="f">Math</span>.<span class="f">floor</span>(s % <span class="n">60</span>)
+    <span class="k">return</span> <span class="s">`</span><span class="v">${m}</span><span class="s">:</span><span class="v">${sec.toString().padStart(2, '0')}</span><span class="s">`</span>
+  }
+
+  <span class="k">if</span> (loading) <span class="k">return</span> (
+    &lt;<span class="f">div</span> className=<span class="s">"flex items-center justify-center h-48"</span>&gt;
+      &lt;<span class="f">div</span> className=<span class="s">"font-mono text-sm text-[rgb(var(--muted-fg))] animate-pulse"</span>&gt;
+        A carregar fila...
+      &lt;/<span class="f">div</span>&gt;
+    &lt;/<span class="f">div</span>&gt;
+  )
+
+  <span class="k">return</span> (
+    &lt;<span class="f">div</span> className=<span class="s">"space-y-6"</span>&gt;
+
+      &lt;<span class="c">{/* Sessão Activa */}</span>&gt;
+      {state?.activeSession ? (
+        &lt;<span class="f">div</span> className=<span class="s">"border border-teal-500/30 bg-teal-500/5 p-6 rounded-sm"</span>&gt;
+          &lt;<span class="f">p</span> className=<span class="s">"font-mono text-[10px] text-teal-400 tracking-widest uppercase mb-2"</span>&gt;
+            Sessão Activa
+          &lt;/<span class="f">p</span>&gt;
+          &lt;<span class="f">div</span> className=<span class="s">"flex items-center justify-between"</span>&gt;
+            &lt;<span class="f">div</span>&gt;
+              &lt;<span class="f">p</span> className=<span class="s">"font-display text-lg font-bold"</span>&gt;
+                {state.activeSession.user?.displayName}
+              &lt;/<span class="f">p</span>&gt;
+              &lt;<span class="f">p</span> className=<span class="s">"text-sm text-[rgb(var(--muted-fg))]"</span>&gt;
+                {state.activeSession.game?.title || <span class="s">'Jogo não especificado'</span>}
+              &lt;/<span class="f">p</span>&gt;
+            &lt;/<span class="f">div</span>&gt;
+            &lt;<span class="f">div</span> className=<span class="s">"text-right"</span>&gt;
+              &lt;<span class="f">p</span> className=<span class="s">"font-mono text-3xl font-bold text-teal-400"</span>&gt;
+                {<span class="f">fmt</span>(timer)}
+              &lt;/<span class="f">p</span>&gt;
+              &lt;<span class="f">p</span> className=<span class="s">"font-mono text-[10px] text-[rgb(var(--muted-fg))]"</span>&gt;RESTANTE&lt;/<span class="f">p</span>&gt;
+            &lt;/<span class="f">div</span>&gt;
+          &lt;/<span class="f">div</span>&gt;
+        &lt;/<span class="f">div</span>&gt;
+      ) : (
+        &lt;<span class="f">div</span> className=<span class="s">"border border-green-500/30 bg-green-500/5 p-6 rounded-sm text-center"</span>&gt;
+          &lt;<span class="f">p</span> className=<span class="s">"font-display text-lg font-bold text-green-400"</span>&gt;
+            Consola Disponível
+          &lt;/<span class="f">p</span>&gt;
+        &lt;/<span class="f">div</span>&gt;
+      )}
+
+      &lt;<span class="c">{/* Fila de espera */}</span>&gt;
+      &lt;<span class="f">div</span>&gt;
+        &lt;<span class="f">p</span> className=<span class="s">"font-mono text-[10px] text-[rgb(var(--muted-fg))] tracking-widest uppercase mb-3"</span>&gt;
+          Fila de Espera ({state?.queue.length || <span class="n">0</span>})
+        &lt;/<span class="f">p</span>&gt;
+        {state?.queue.length === <span class="n">0</span> ? (
+          &lt;<span class="f">p</span> className=<span class="s">"text-[rgb(var(--muted-fg))] text-sm font-mono"</span>&gt;Fila vazia&lt;/<span class="f">p</span>&gt;
+        ) : (
+          &lt;<span class="f">div</span> className=<span class="s">"space-y-2"</span>&gt;
+            {state?.queue.<span class="f">map</span>((s, i) => (
+              &lt;<span class="f">div</span>
+                key={s.id}
+                className={<span class="s">`flex items-center gap-4 p-3 border rounded-sm
+                  </span><span class="v">${s.userId === userId
+                    ? 'border-teal-500/40 bg-teal-500/5'
+                    : 'border-[rgb(var(--border))] bg-surface'
+                  }</span><span class="s">`</span>}
+              &gt;
+                &lt;<span class="f">span</span> className=<span class="s">"font-mono text-sm font-bold text-[rgb(var(--muted-fg))] w-6"</span>&gt;
+                  {i + <span class="n">1</span>}
+                &lt;/<span class="f">span</span>&gt;
+                &lt;<span class="f">div</span> className=<span class="s">"flex-1"</span>&gt;
+                  &lt;<span class="f">p</span> className=<span class="s">"text-sm font-medium"</span>&gt;{s.user?.displayName}&lt;/<span class="f">p</span>&gt;
+                  &lt;<span class="f">p</span> className=<span class="s">"text-xs text-[rgb(var(--muted-fg))] font-mono"</span>&gt;@{s.user?.login}&lt;/<span class="f">p</span>&gt;
+                &lt;/<span class="f">div</span>&gt;
+                {s.userId === userId && (
+                  &lt;<span class="f">span</span> className=<span class="s">"text-xs font-mono text-teal-400"</span>&gt;← Tu&lt;/<span class="f">span</span>&gt;
+                )}
+              &lt;/<span class="f">div</span>&gt;
+            ))}
+          &lt;/<span class="f">div</span>&gt;
+        )}
+      &lt;/<span class="f">div</span>&gt;
+    &lt;/<span class="f">div</span>&gt;
+  )
+}</div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">✅ Checklist — Passo 10</div>
+    <ul class="cl">
+      <li><div class="chk" onclick="tc(this)"></div><span class="ct">components/cadete/QueueLive.tsx criado com Pusher</span></li>
+      <li><div class="chk" onclick="tc(this)"></div><span class="ct">Timer de contagem decrescente funcional</span></li>
+      <li><div class="chk" onclick="tc(this)"></div><span class="ct">app/(cadete)/fila/page.tsx criado a usar QueueLive</span></li>
+    </ul>
+  </div>
+
+  <div class="step-nav">
+    <button class="btn btn-sec" onclick="go('s9')">← Passo 09</button>
+    <button class="btn btn-primary" onclick="go('s11')">Passo 11 →</button>
+  </div>
+</div>
+
+<!-- ── STEP 11: STAFF DASHBOARD ── -->
+<div class="step" id="s-s11">
+  <div class="step-head">
+    <div class="step-meta"><span class="pill pill-ui">INTERFACE</span><span class="step-pos">PASSO 11 DE 13</span></div>
+    <div class="step-title">Dashboard do <em>Staff</em></div>
+    <p class="step-desc">Centro de controlo operacional. Vê a fila em tempo real, a sessão activa, alertas de novos pedidos e métricas do dia.</p>
+    <div class="step-eta">~30 minutos</div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">11.1 — app/(staff)/staff/dashboard/page.tsx</div>
+    <div class="code-block">
+      <div class="code-head"><span class="code-file">app/(staff)/staff/dashboard/page.tsx</span><span class="code-lang">TYPESCRIPT</span></div>
+      <div class="code-body"><span class="k">import</span> { auth } <span class="k">from</span> <span class="s">'@/lib/auth'</span>
+<span class="k">import</span> { redirect } <span class="k">from</span> <span class="s">'next/navigation'</span>
+<span class="k">import</span> { prisma } <span class="k">from</span> <span class="s">'@/lib/prisma'</span>
+<span class="k">import</span> StaffQueuePanel <span class="k">from</span> <span class="s">'@/components/staff/StaffQueuePanel'</span>
+
+<span class="k">export default async function</span> <span class="f">StaffDashboard</span>() {
+  <span class="k">const</span> session = <span class="k">await</span> <span class="f">auth</span>()
+  <span class="k">if</span> (!session?.user) <span class="f">redirect</span>(<span class="s">'/login'</span>)
+  <span class="k">if</span> (![<span class="s">'STAFF'</span>, <span class="s">'ADMIN'</span>].<span class="f">includes</span>(session.user.role)) <span class="f">redirect</span>(<span class="s">'/dashboard'</span>)
+
+  <span class="c">// Métricas do dia</span>
+  <span class="k">const</span> today = <span class="k">new</span> <span class="f">Date</span>()
+  today.<span class="f">setHours</span>(<span class="n">0</span>, <span class="n">0</span>, <span class="n">0</span>, <span class="n">0</span>)
+
+  <span class="k">const</span> [totalToday, activeNow, pendingCount, reportsOpen] = <span class="k">await</span> <span class="f">Promise</span>.<span class="f">all</span>([
+    prisma.session.<span class="f">count</span>({ where: { createdAt: { gte: today } } }),
+    prisma.session.<span class="f">count</span>({ where: { status: <span class="s">'ACTIVE'</span> } }),
+    prisma.session.<span class="f">count</span>({ where: { status: <span class="s">'PENDING'</span> } }),
+    prisma.report.<span class="f">count</span>({ where: { status: <span class="s">'OPEN'</span> } }),
+  ])
+
+  <span class="k">return</span> (
+    &lt;<span class="f">div</span> className=<span class="s">"min-h-screen p-6 md:p-10"</span>&gt;
+      &lt;<span class="f">div</span> className=<span class="s">"mb-8"</span>&gt;
+        &lt;<span class="f">p</span> className=<span class="s">"font-mono text-[10px] text-[rgb(var(--muted-fg))] tracking-widest uppercase mb-1"</span>&gt;
+          Centro de Controlo
+        &lt;/<span class="f">p</span>&gt;
+        &lt;<span class="f">h1</span> className=<span class="s">"font-display text-3xl font-black tracking-tight"</span>&gt;
+          Dashboard <span class="f">Staff</span>
+        &lt;/<span class="f">h1</span>&gt;
+      &lt;/<span class="f">div</span>&gt;
+
+      &lt;<span class="c">{/* Métricas */}</span>&gt;
+      &lt;<span class="f">div</span> className=<span class="s">"grid grid-cols-2 md:grid-cols-4 gap-2 mb-8"</span>&gt;
+        {[
+          { label: <span class="s">'Sessões hoje'</span>, value: totalToday, color: <span class="s">'text-teal-400'</span> },
+          { label: <span class="s">'Activas agora'</span>, value: activeNow, color: <span class="s">'text-green-400'</span> },
+          { label: <span class="s">'Pendentes'</span>, value: pendingCount, color: <span class="s">'text-orange-400'</span> },
+          { label: <span class="s">'Denúncias abertas'</span>, value: reportsOpen, color: <span class="s">'text-red-400'</span> },
+        ].<span class="f">map</span>(m => (
+          &lt;<span class="f">div</span> key={m.label} className=<span class="s">"bg-surface border border-[rgb(var(--border))] p-4"</span>&gt;
+            &lt;<span class="f">p</span> className={<span class="s">`font-display text-4xl font-black </span><span class="v">${m.color}</span><span class="s">`</span>}&gt;{m.value}&lt;/<span class="f">p</span>&gt;
+            &lt;<span class="f">p</span> className=<span class="s">"font-mono text-[10px] text-[rgb(var(--muted-fg))] tracking-wider uppercase mt-1"</span>&gt;
+              {m.label}
+            &lt;/<span class="f">p</span>&gt;
+          &lt;/<span class="f">div</span>&gt;
+        ))}
+      &lt;/<span class="f">div</span>&gt;
+
+      &lt;<span class="c">{/* Fila em tempo real */}</span>&gt;
+      &lt;<span class="f">StaffQueuePanel</span> /&gt;
+    &lt;/<span class="f">div</span>&gt;
+  )
+}</div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">✅ Checklist — Passo 11</div>
+    <ul class="cl">
+      <li><div class="chk" onclick="tc(this)"></div><span class="ct">app/(staff)/staff/dashboard/page.tsx criado</span></li>
+      <li><div class="chk" onclick="tc(this)"></div><span class="ct">Métricas do dia visíveis (sessões, pendentes, denúncias)</span></li>
+      <li><div class="chk" onclick="tc(this)"></div><span class="ct">Protecção de role — apenas STAFF e ADMIN</span></li>
+    </ul>
+  </div>
+
+  <div class="step-nav">
+    <button class="btn btn-sec" onclick="go('s10')">← Passo 10</button>
+    <button class="btn btn-primary" onclick="go('s12')">Passo 12 →</button>
+  </div>
+</div>
+
+<!-- ── STEP 12: GESTÃO REQUISIÇÕES ── -->
+<div class="step" id="s-s12">
+  <div class="step-head">
+    <div class="step-meta"><span class="pill pill-ui">INTERFACE</span><span class="step-pos">PASSO 12 DE 13</span></div>
+    <div class="step-title">Gestão de <em>Requisições</em></div>
+    <p class="step-desc">Painel do staff para aprovar, rejeitar, iniciar e terminar sessões. Com actualizações em tempo real via Pusher.</p>
+    <div class="step-eta">~25 minutos</div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">12.1 — components/staff/StaffQueuePanel.tsx</div>
+    <div class="code-block">
+      <div class="code-head"><span class="code-file">components/staff/StaffQueuePanel.tsx</span><span class="code-lang">TYPESCRIPT</span></div>
+      <div class="code-body"><span class="s">'use client'</span>
+
+<span class="k">import</span> { useEffect, useState, useCallback } <span class="k">from</span> <span class="s">'react'</span>
+<span class="k">import</span> { pusherClient, CHANNELS, EVENTS } <span class="k">from</span> <span class="s">'@/lib/pusher'</span>
+
+<span class="k">type</span> <span class="f">Action</span> = <span class="s">'approve'</span> | <span class="s">'reject'</span> | <span class="s">'start'</span> | <span class="s">'end'</span> | <span class="s">'extend'</span>
+
+<span class="k">export default function</span> <span class="f">StaffQueuePanel</span>() {
+  <span class="k">const</span> [sessions, setSessions] = <span class="f">useState</span>&lt;<span class="k">any</span>[]&gt;([])
+  <span class="k">const</span> [loading, setLoading] = <span class="f">useState</span>(<span class="k">true</span>)
+
+  <span class="k">const</span> fetchSessions = <span class="f">useCallback</span>(<span class="k">async</span> () => {
+    <span class="k">const</span> res = <span class="k">await</span> <span class="f">fetch</span>(<span class="s">'/api/sessions'</span>)
+    <span class="k">if</span> (res.ok) setSessions(<span class="k">await</span> res.<span class="f">json</span>())
+    <span class="f">setLoading</span>(<span class="k">false</span>)
+  }, [])
+
+  <span class="k">async function</span> <span class="f">doAction</span>(sessionId: <span class="k">string</span>, action: <span class="f">Action</span>, note?: <span class="k">string</span>) {
+    <span class="k">await</span> <span class="f">fetch</span>(<span class="s">`/api/sessions/</span><span class="v">${sessionId}</span><span class="s">`</span>, {
+      method: <span class="s">'PATCH'</span>,
+      headers: { <span class="s">'Content-Type'</span>: <span class="s">'application/json'</span> },
+      body: <span class="f">JSON</span>.<span class="f">stringify</span>({ action, note }),
+    })
+    <span class="f">fetchSessions</span>()
+  }
+
+  <span class="f">useEffect</span>(() => {
+    <span class="f">fetchSessions</span>()
+    <span class="k">const</span> ch = pusherClient.<span class="f">subscribe</span>(CHANNELS.STAFF)
+    ch.<span class="f">bind</span>(EVENTS.NEW_REQUEST, <span class="f">fetchSessions</span>)
+    <span class="k">const</span> qCh = pusherClient.<span class="f">subscribe</span>(CHANNELS.QUEUE)
+    qCh.<span class="f">bind</span>(EVENTS.QUEUE_UPDATED, <span class="f">fetchSessions</span>)
+    <span class="k">return</span> () => {
+      pusherClient.<span class="f">unsubscribe</span>(CHANNELS.STAFF)
+      pusherClient.<span class="f">unsubscribe</span>(CHANNELS.QUEUE)
+    }
+  }, [fetchSessions])
+
+  <span class="k">const</span> STATUS_LABEL: Record&lt;<span class="k">string</span>, <span class="k">string</span>&gt; = {
+    PENDING: <span class="s">'Pendente'</span>, APPROVED: <span class="s">'Aprovado'</span>,
+    ACTIVE: <span class="s">'Activo'</span>, DONE: <span class="s">'Concluído'</span>, REJECTED: <span class="s">'Rejeitado'</span>,
+  }
+  <span class="k">const</span> STATUS_COLOR: Record&lt;<span class="k">string</span>, <span class="k">string</span>&gt; = {
+    PENDING: <span class="s">'text-orange-400'</span>, APPROVED: <span class="s">'text-blue-400'</span>,
+    ACTIVE: <span class="s">'text-green-400'</span>, DONE: <span class="s">'text-[rgb(var(--muted-fg))]'</span>,
+    REJECTED: <span class="s">'text-red-400'</span>,
+  }
+
+  <span class="k">if</span> (loading) <span class="k">return</span> &lt;<span class="f">div</span> className=<span class="s">"font-mono text-sm text-[rgb(var(--muted-fg))] animate-pulse"</span>&gt;A carregar...&lt;/<span class="f">div</span>&gt;
+
+  <span class="k">return</span> (
+    &lt;<span class="f">div</span>&gt;
+      &lt;<span class="f">p</span> className=<span class="s">"font-mono text-[10px] text-[rgb(var(--muted-fg))] tracking-widest uppercase mb-4"</span>&gt;
+        Fila em Tempo Real ({sessions.length})
+      &lt;/<span class="f">p</span>&gt;
+
+      {sessions.length === <span class="n">0</span> ? (
+        &lt;<span class="f">div</span> className=<span class="s">"border border-[rgb(var(--border))] p-8 text-center"</span>&gt;
+          &lt;<span class="f">p</span> className=<span class="s">"text-[rgb(var(--muted-fg))] font-mono text-sm"</span>&gt;Sem pedidos activos&lt;/<span class="f">p</span>&gt;
+        &lt;/<span class="f">div</span>&gt;
+      ) : (
+        &lt;<span class="f">div</span> className=<span class="s">"space-y-2"</span>&gt;
+          {sessions.<span class="f">map</span>((s) => (
+            &lt;<span class="f">div</span> key={s.id} className=<span class="s">"border border-[rgb(var(--border))] bg-surface p-4 rounded-sm"</span>&gt;
+              &lt;<span class="f">div</span> className=<span class="s">"flex items-center justify-between flex-wrap gap-4"</span>&gt;
+                &lt;<span class="f">div</span>&gt;
+                  &lt;<span class="f">p</span> className=<span class="s">"font-medium"</span>&gt;{s.user?.displayName}&lt;/<span class="f">p</span>&gt;
+                  &lt;<span class="f">p</span> className=<span class="s">"font-mono text-xs text-[rgb(var(--muted-fg))]"</span>&gt;
+                    @{s.user?.login} · {s.game?.title || <span class="s">'Sem jogo'</span>}
+                  &lt;/<span class="f">p</span>&gt;
+                &lt;/<span class="f">div</span>&gt;
+
+                &lt;<span class="f">div</span> className=<span class="s">"flex items-center gap-2 flex-wrap"</span>&gt;
+                  &lt;<span class="f">span</span> className={<span class="s">`font-mono text-xs </span><span class="v">${STATUS_COLOR[s.status]}</span><span class="s">`</span>}&gt;
+                    {STATUS_LABEL[s.status]}
+                  &lt;/<span class="f">span</span>&gt;
+
+                  {s.status === <span class="s">'PENDING'</span> && (&lt;&gt;
+                    &lt;<span class="f">button</span> onClick={() => <span class="f">doAction</span>(s.id, <span class="s">'approve'</span>)}
+                      className=<span class="s">"px-3 py-1 bg-teal-400/10 border border-teal-400/30 text-teal-400 font-mono text-xs hover:bg-teal-400/20"</span>&gt;
+                      Aprovar
+                    &lt;/<span class="f">button</span>&gt;
+                    &lt;<span class="f">button</span> onClick={() => <span class="f">doAction</span>(s.id, <span class="s">'reject'</span>)}
+                      className=<span class="s">"px-3 py-1 bg-red-500/10 border border-red-500/30 text-red-400 font-mono text-xs hover:bg-red-500/20"</span>&gt;
+                      Rejeitar
+                    &lt;/<span class="f">button</span>&gt;
+                  &lt;/&gt;)}
+
+                  {s.status === <span class="s">'APPROVED'</span> && (
+                    &lt;<span class="f">button</span> onClick={() => <span class="f">doAction</span>(s.id, <span class="s">'start'</span>)}
+                      className=<span class="s">"px-3 py-1 bg-green-500/10 border border-green-500/30 text-green-400 font-mono text-xs hover:bg-green-500/20"</span>&gt;
+                      Iniciar Sessão
+                    &lt;/<span class="f">button</span>&gt;
+                  )}
+
+                  {s.status === <span class="s">'ACTIVE'</span> && (&lt;&gt;
+                    &lt;<span class="f">button</span> onClick={() => <span class="f">doAction</span>(s.id, <span class="s">'extend'</span>)}
+                      className=<span class="s">"px-3 py-1 bg-blue-500/10 border border-blue-500/30 text-blue-400 font-mono text-xs"</span>&gt;
+                      +60 min
+                    &lt;/<span class="f">button</span>&gt;
+                    &lt;<span class="f">button</span> onClick={() => <span class="f">doAction</span>(s.id, <span class="s">'end'</span>)}
+                      className=<span class="s">"px-3 py-1 bg-red-500/10 border border-red-500/30 text-red-400 font-mono text-xs"</span>&gt;
+                      Terminar
+                    &lt;/<span class="f">button</span>&gt;
+                  &lt;/&gt;)}
+                &lt;/<span class="f">div</span>&gt;
+              &lt;/<span class="f">div</span>&gt;
+            &lt;/<span class="f">div</span>&gt;
+          ))}
+        &lt;/<span class="f">div</span>&gt;
+      )}
+    &lt;/<span class="f">div</span>&gt;
+  )
+}</div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">✅ Checklist — Passo 12</div>
+    <ul class="cl">
+      <li><div class="chk" onclick="tc(this)"></div><span class="ct">components/staff/StaffQueuePanel.tsx criado</span></li>
+      <li><div class="chk" onclick="tc(this)"></div><span class="ct">Aprovar, rejeitar, iniciar, terminar e estender sessões</span></li>
+      <li><div class="chk" onclick="tc(this)"></div><span class="ct">Actualização automática via Pusher</span></li>
+    </ul>
+  </div>
+
+  <div class="step-nav">
+    <button class="btn btn-sec" onclick="go('s11')">← Passo 11</button>
+    <button class="btn btn-primary" onclick="go('s13')">Passo 13 →</button>
+  </div>
+</div>
+
+<!-- ── STEP 13: TEST + COMMIT ── -->
+<div class="step" id="s-s13">
+  <div class="step-head">
+    <div class="step-meta"><span class="pill pill-done">FINALIZAR</span><span class="step-pos">PASSO 13 DE 13</span></div>
+    <div class="step-title">Testar + <em>Commit</em></div>
+    <p class="step-desc">Teste end-to-end do fluxo completo: login → elegibilidade → requisição → fila → aprovação staff → sessão activa. Depois commit e push.</p>
+    <div class="step-eta">~15 minutos</div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">13.1 — Checklist de teste end-to-end</div>
+    <div style="background:var(--s2);border:1px solid var(--border2);border-radius:5px;padding:20px;font-size:13px;line-height:2.5;">
+      <div>1. Abre <strong style="color:var(--teal)">localhost:3000</strong> → login com a conta 42</div>
+      <div>2. Vai a <strong style="color:var(--fg)">/dashboard</strong> → vês os 8 critérios de elegibilidade?</div>
+      <div>3. Vai a <strong style="color:var(--fg)">/requisicao</strong> → o formulário aparece se elegível?</div>
+      <div>4. Submete um pedido → és redirecionado para <strong style="color:var(--fg)">/fila</strong>?</div>
+      <div>5. Abre <strong style="color:var(--fg)">/staff/dashboard</strong> (precisas mudar o role na DB para STAFF)</div>
+      <div>6. O pedido aparece no painel do staff em tempo real?</div>
+      <div>7. Aprova → Inicia → o timer aparece na fila do cadete?</div>
+      <div>8. Termina a sessão → a fila actualiza sem refresh?</div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">13.2 — Mudar role para STAFF (para testar)</div>
+    <div class="cmd-block">
+      <div class="cmd-head"><span class="cmd-lbl">PRISMA STUDIO ou SQL</span><button class="cmd-copy" onclick="cp(this,'npx prisma studio')">copiar</button></div>
+      <div class="cmd-body"><span class="c"># Opção 1: Prisma Studio (visual)</span>
+<span class="f">npx prisma studio</span>
+<span class="o"># → Tabela users → encontra o teu utilizador → muda role para STAFF</span>
+
+<span class="c"># Opção 2: SQL directo no Supabase SQL Editor</span>
+<span class="k">UPDATE</span> users <span class="k">SET</span> role = <span class="s">'STAFF'</span> <span class="k">WHERE</span> login = <span class="s">'[o-teu-login-42]'</span>;</div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">13.3 — Commit da Fase 2</div>
+    <div class="cmd-block">
+      <div class="cmd-head"><span class="cmd-lbl">TERMINAL</span><button class="cmd-copy" onclick="cp(this,'git add . && git commit -m \"feat: fase 2 - core do sistema PS42\"')">copiar</button></div>
+      <div class="cmd-body"><span class="f">git add</span> .
+<span class="f">git commit</span> <span class="s">-m</span> <span class="s">"feat: fase 2 - core do sistema PS42
+
+- Wrapper API 42 Intra com tipos completos
+- Motor de elegibilidade (8 critérios Art. 3)
+- Configuração Pusher (WebSockets) + Redis (cache)
+- API routes: sessions, queue, eligibility
+- Dashboard cadete com estado de elegibilidade
+- Formulário de requisição com validações
+- Fila em tempo real com timer (Pusher)
+- Dashboard staff com métricas operacionais
+- Gestão de requisições: aprovar/rejeitar/iniciar/terminar"</span>
+<span class="f">git push</span></div>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-title">🎉 Checklist Final — Fase 2 Completa</div>
+    <ul class="cl">
+      <li><div class="chk" onclick="tc(this)"></div><span class="ct">Elegibilidade verificada automaticamente via API 42</span></li>
+      <li><div class="chk" onclick="tc(this)"></div><span class="ct">Formulário de requisição funcional com validações do regulamento</span></li>
+      <li><div class="chk" onclick="tc(this)"></div><span class="ct">Fila actualiza em tempo real sem refresh de página</span></li>
+      <li><div class="chk" onclick="tc(this)"></div><span class="ct">Staff consegue aprovar/rejeitar/iniciar/terminar sessões</span></li>
+      <li><div class="chk" onclick="tc(this)"></div><span class="ct">Timer da sessão visível e a fazer contagem decrescente</span></li>
+      <li><div class="chk" onclick="tc(this)"></div><span class="ct">Código no GitHub</span></li>
+    </ul>
+  </div>
+
+  <div class="box tip"><div class="box-label">🚀 A seguir — Fase 3</div>Com o core operacional, a <strong>Fase 3</strong> constrói o Gaming Hub: catálogo de jogos, leaderboards, sistema de conquistas e torneios. O sistema começa a ganhar a sua identidade de comunidade.</div>
+
+  <div class="step-nav">
+    <button class="btn btn-sec" onclick="go('s12')">← Passo 12</button>
+    <button class="btn btn-primary" style="background:var(--gold);border-color:var(--gold);color:#000">🏆 Fase 2 Concluída!</button>
+  </div>
+</div>
+
+</main>
+</div>
+
+<script>
+const steps = ['ov','s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','s11','s12','s13']
+
+function go(id) {
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('active'))
+  document.querySelectorAll('.sb-item').forEach(n => n.classList.remove('active'))
+  document.getElementById('s-' + id).classList.add('active')
+  document.querySelectorAll('.sb-item').forEach(item => {
+    if (item.getAttribute('onclick')?.includes(`'${id}'`)) item.classList.add('active')
+  })
+  document.querySelector('.main').scrollTo({ top: 0, behavior: 'smooth' })
+  const idx = steps.indexOf(id)
+  const pct = Math.round((idx / (steps.length - 1)) * 100)
+  document.getElementById('pfill').style.width = pct + '%'
+  document.getElementById('pct').textContent = pct + '%'
+}
+
+function tc(el) {
+  el.classList.toggle('on')
+  el.textContent = el.classList.contains('on') ? '✓' : ''
+  el.closest('li').classList.toggle('done', el.classList.contains('on'))
+}
+
+function cp(btn, text) {
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'copiado ✓'; btn.classList.add('ok')
+    setTimeout(() => { btn.textContent = 'copiar'; btn.classList.remove('ok') }, 2000)
+  })
+}
+</script>
+</body>
+</html>
