@@ -10,6 +10,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { checkEligibility, isWithinOperatingHours } from '@/lib/eligibility'
 import { pusherServer, CHANNELS, EVENTS } from '@/lib/pusher'
+import { Prisma } from '@prisma/client'
 import { z } from 'zod'
 
 const CreateSessionSchema = z.object({
@@ -79,38 +80,95 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Dados inválidos' }, { status: 400 })
     }
 
-    // 5. Contar posição na fila
+    let txResult:
+        | {
+              newSession: Awaited<ReturnType<typeof prisma.session.create>>
+              queueSize: number
+          }
+        | undefined
 
-    // Antes de criar a nova sessão, contamos quantas sessões já estão pendentes ou aprovadas para determinar a posição na fila da nova requisição, garantindo que a posição na fila seja calculada com base no número actual de sessões activas e pendentes, e que a nova sessão seja adicionada ao final da fila.
-    const queueCount = await prisma.session.count({
-        where: { status: { in: ['PENDING', 'APPROVED'] } },
-    })
+    for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+            txResult = await prisma.$transaction(
+                async (tx) => {
+                    const existing = await tx.session.findFirst({
+                        where: {
+                            userId: session.user.id,
+                            status: { in: ['PENDING', 'APPROVED', 'ACTIVE'] },
+                        },
+                    })
 
-    // 6. Criar sessão
-    const newSession = await prisma.session.create({
-        data: {
-            userId: session.user.id,
-            gameId: parsed.data.gameId,
-            status: 'PENDING',
-            queuePos: queueCount + 1,
-        },
-        include: {
-            user: { select: { login: true, displayName: true, avatarUrl: true } },
-            game: { select: { title: true } },
-        },
-    })
+                    if (existing) {
+                        throw new Error('SESSION_CONFLICT')
+                    }
+
+                    const queueCount = await tx.session.count({
+                        where: { status: { in: ['PENDING', 'APPROVED'] } },
+                    })
+
+                    const newSession = await tx.session.create({
+                        data: {
+                            userId: session.user.id,
+                            gameId: parsed.data.gameId,
+                            status: 'PENDING',
+                            queuePos: queueCount + 1,
+                        },
+                        include: {
+                            user: { select: { login: true, displayName: true, avatarUrl: true } },
+                            game: { select: { title: true } },
+                        },
+                    })
+
+                    await tx.auditLog.create({
+                        data: {
+                            actorId: session.user.id,
+                            action: 'SESSION_REQUESTED',
+                            entityType: 'Session',
+                            entityId: newSession.id,
+                            afterData: {
+                                status: newSession.status,
+                                queuePos: newSession.queuePos,
+                            },
+                        },
+                    })
+
+                    return { newSession, queueSize: queueCount + 1 }
+                },
+                { isolationLevel: 'Serializable' }
+            )
+            break
+        } catch (error) {
+            if (error instanceof Error && error.message === 'SESSION_CONFLICT') {
+                return NextResponse.json({ error: 'Já tens uma sessão activa ou pendente' }, { status: 409 })
+            }
+
+            if (
+                error instanceof Prisma.PrismaClientKnownRequestError &&
+                error.code === 'P2034' &&
+                attempt === 0
+            ) {
+                continue
+            }
+
+            throw error
+        }
+    }
+
+    if (!txResult) {
+        return NextResponse.json({ error: 'Não foi possível criar a sessão. Tenta novamente.' }, { status: 409 })
+    }
 
     // 7. Notificar staff em tempo real
     await pusherServer.trigger(CHANNELS.STAFF, EVENTS.NEW_REQUEST, {
-        session: newSession,
-        queueSize: queueCount + 1,
+        session: txResult.newSession,
+        queueSize: txResult.queueSize,
     })
 
     // 8. Actualizar fila para todos
     await pusherServer.trigger(CHANNELS.QUEUE, EVENTS.QUEUE_UPDATED, {
-        position: queueCount + 1,
+        position: txResult.queueSize,
         userId: session.user.id,
     })
 
-    return NextResponse.json(newSession, { status: 201 })
+    return NextResponse.json(txResult.newSession, { status: 201 })
 }
