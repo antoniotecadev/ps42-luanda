@@ -17,7 +17,7 @@ const CreateSessionSchema = z.object({
 })
 
 // GET — listar sessões (para staff e fila)
-export async function GET(req: NextRequest) {
+export async function GET() {
     const session = await auth() // Verifica autenticação e obtém informações do usuário, garantindo que apenas usuários autenticados possam acessar a lista de sessões, e retornando um erro 401 Unauthorized para requisições não autenticadas.
     if (!session?.user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
 
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 4. Validar body
-    const body = await request.json().catch((err: any) => {
+    const body = await request.json().catch((err: unknown) => {
         console.error('Body inválido: não é um JSON válido', err)
         return {}
     })

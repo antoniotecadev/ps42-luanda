@@ -4,18 +4,18 @@
  * Endpoint público (para o utilizador autenticado) que retorna o resultado detalhado da verificação de elegibilidade — critério a critério.
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { checkEligibility, isWithinOperatingHours } from '@/lib/eligibility'
 
-export async function GET(req: NextRequest) {
+export async function GET() {
     const session = await auth()
     if (!session?.user) {
         return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
     }
 
     const [eligibility, hours] = await Promise.all([
-        checkEligibility(session.user.id, session.user.accessToken),
+        checkEligibility(session.user.id, session.user.intraId, session.user.accessToken),
         Promise.resolve(isWithinOperatingHours()),
     ])
 
@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
 }
 
 // DELETE — invalidar cache (forçar re-check)
-export async function DELETE(req: NextRequest) {
+export async function DELETE() {
     const session = await auth()
     if (!session?.user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
 

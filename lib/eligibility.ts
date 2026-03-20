@@ -23,7 +23,6 @@ export interface EligibilityResult {
 }
 
 const CACHE_TTL = 900; // 15 minutos em segundos
-const CAMPUS_ID = process.env.FORTY_TWO_CAMPUS_ID ?? "";
 const LUANDA_CURSUS_ID = 21; // cursus_id do 42cursus — confirmar com staff
 
 // ── Motor Principal ───────────────────────────────────────────────────────

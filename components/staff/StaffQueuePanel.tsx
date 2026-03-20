@@ -12,15 +12,33 @@ import { pusherClient, CHANNELS, EVENTS } from '@/lib/pusher'
 
 type Action = 'approve' | 'reject' | 'start' | 'end' | 'extend'
 
+interface StaffSession {
+    id: string
+    status: 'PENDING' | 'APPROVED' | 'ACTIVE' | 'DONE' | 'REJECTED' | 'CANCELLED'
+    user?: {
+        login?: string
+        displayName?: string
+    } | null
+    game?: {
+        title?: string
+    } | null
+}
+
 export default function StaffQueuePanel() {
-    const [sessions, setSessions] = useState<any[]>([])
+    const [sessions, setSessions] = useState<StaffSession[]>([])
     const [loading, setLoading] = useState(true)
 
-    const fetchSessions = useCallback(async () => {
+    const fetchSessionsData = useCallback(async (): Promise<StaffSession[]> => {
         const res = await fetch('/api/sessions')
-        if (res.ok) setSessions(await res.json())
-        setLoading(false)
+        if (!res.ok) return []
+        return (await res.json()) as StaffSession[]
     }, [])
+
+    const refreshSessions = useCallback(async () => {
+        const data = await fetchSessionsData()
+        setSessions(data)
+        setLoading(false)
+    }, [fetchSessionsData])
 
     async function doAction(sessionId: string, action: Action, note?: string) {
         await fetch(`/api/sessions/${sessionId}`, {
@@ -28,20 +46,37 @@ export default function StaffQueuePanel() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ action, note }),
         })
-        fetchSessions()
+        await refreshSessions()
     }
 
     useEffect(() => {
-        fetchSessions()
+        let disposed = false
+
+        const sync = async () => {
+            const data = await fetchSessionsData()
+            if (disposed) return
+            setSessions(data)
+            setLoading(false)
+        }
+
+        queueMicrotask(() => {
+            void sync()
+        })
+
         const ch = pusherClient.subscribe(CHANNELS.STAFF)
-        ch.bind(EVENTS.NEW_REQUEST, fetchSessions)
+        ch.bind(EVENTS.NEW_REQUEST, () => {
+            void sync()
+        })
         const qCh = pusherClient.subscribe(CHANNELS.QUEUE)
-        qCh.bind(EVENTS.QUEUE_UPDATED, fetchSessions)
+        qCh.bind(EVENTS.QUEUE_UPDATED, () => {
+            void sync()
+        })
         return () => {
+            disposed = true
             pusherClient.unsubscribe(CHANNELS.STAFF)
             pusherClient.unsubscribe(CHANNELS.QUEUE)
         }
-    }, [fetchSessions])
+    }, [fetchSessionsData])
 
     const STATUS_LABEL: Record<string, string> = {
         PENDING: 'Pendente', APPROVED: 'Aprovado',

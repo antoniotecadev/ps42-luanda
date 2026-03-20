@@ -10,9 +10,28 @@
 import { useEffect, useState, useCallback } from 'react'
 import { pusherClient, CHANNELS, EVENTS } from '@/lib/pusher'
 
+interface QueueUser {
+    login: string
+    displayName: string
+    avatarUrl: string | null
+}
+
+interface QueueGame {
+    title: string | null
+}
+
+interface QueueSession {
+    id: string
+    userId: string
+    startedAt?: string | null
+    durationMin?: number | null
+    user?: QueueUser | null
+    game?: QueueGame | null
+}
+
 interface QueueState {
-    activeSession: any | null
-    queue: any[]
+    activeSession: QueueSession | null
+    queue: QueueSession[]
     myPosition: number | null
     estimatedWaitMin: number
     consoleStatus: 'free' | 'occupied' | 'queued'
@@ -23,32 +42,52 @@ export default function QueueLive({ userId }: { userId: string }) {
     const [timer, setTimer] = useState(0)   // segundos restantes
     const [loading, setLoading] = useState(true)
 
-    const fetchQueue = useCallback(async () => {
+    const fetchQueueData = useCallback(async (): Promise<QueueState | null> => {
         const res = await fetch('/api/queue')
-        if (res.ok) {
-            const data = await res.json()
-            setState(data)
-            // Inicializar timer se há sessão activa
-            if (data.activeSession?.startedAt) {
-                const elapsed = (Date.now() - new Date(data.activeSession.startedAt).getTime()) / 1000
-                const total = (data.activeSession.durationMin || 60) * 60
-                setTimer(Math.max(0, total - elapsed))
-            }
-        }
-        setLoading(false)
+        if (!res.ok) return null
+        return (await res.json()) as QueueState
     }, [])
 
     // Fetch inicial e subscrição Pusher
     useEffect(() => {
-        fetchQueue()
+        let disposed = false
+
+        const syncQueue = async () => {
+            const data = await fetchQueueData()
+            if (disposed) return
+            if (data) {
+                setState(data)
+                if (data.activeSession?.startedAt) {
+                    const elapsed = (Date.now() - new Date(data.activeSession.startedAt).getTime()) / 1000
+                    const total = (data.activeSession.durationMin || 60) * 60
+                    setTimer(Math.max(0, total - elapsed))
+                } else {
+                    setTimer(0)
+                }
+            }
+            setLoading(false)
+        }
+
+        queueMicrotask(() => {
+            void syncQueue()
+        })
 
         const channel = pusherClient.subscribe(CHANNELS.QUEUE)
-        channel.bind(EVENTS.QUEUE_UPDATED, () => fetchQueue())
-        channel.bind(EVENTS.SESSION_STARTED, () => fetchQueue())
-        channel.bind(EVENTS.SESSION_ENDED, () => fetchQueue())
+        channel.bind(EVENTS.QUEUE_UPDATED, () => {
+            void syncQueue()
+        })
+        channel.bind(EVENTS.SESSION_STARTED, () => {
+            void syncQueue()
+        })
+        channel.bind(EVENTS.SESSION_ENDED, () => {
+            void syncQueue()
+        })
 
-        return () => pusherClient.unsubscribe(CHANNELS.QUEUE)
-    }, [fetchQueue])
+        return () => {
+            disposed = true
+            pusherClient.unsubscribe(CHANNELS.QUEUE)
+        }
+    }, [fetchQueueData])
 
     // Timer countdown
     useEffect(() => {
