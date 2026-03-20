@@ -32,7 +32,7 @@ type AuthToken = JWT & {
 // e callbacks para sincronizar os dados do usuário e enriquecer a sessão com informações adicionais do banco de dados,
 // como papel, elegibilidade e status de bloqueio. Também definimos páginas personalizadas para login e erros de autenticação.
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  debug: true,
+  debug: process.env.NODE_ENV === "development",
   ...authConfig, // Importa as regras do configuração, incluindo callbacks e páginas personalizadas
   providers: [
     {
@@ -43,7 +43,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       clientSecret: process.env.FORTY_TWO_CLIENT_SECRET,
       authorization: {
         url: "https://api.intra.42.fr/oauth/authorize", // URL de autorização da 42 Intra, incluindo os escopos necessários para acessar as informações do usuário e seus projectos, grupos e eventos
-        params: { scope: "public profile projects" },
+        params: { scope: "public profile projects", prompt: "consent" }, // rompt: "consent" força o usuário a conceder permissão toda vez, garantindo que tenhamos os dados mais recentes da 42 Intra a cada login
       },
       // URLs para obtenção do token de acesso e informações do usuário, conforme a API da 42 Intra
       token: "https://api.intra.42.fr/oauth/token",
@@ -179,6 +179,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         return authToken;
       }
 
+      if (!authToken.refreshToken) {
+        return {
+          ...authToken,
+          error: "ReauthRequired",
+        };
+      }
+
       // SE CHEGOU AQUI, O TOKEN DA INTRA EXPIROU!
       // Precisamos de pedir um novo à 42 usando o refreshToken
       return refreshAccessToken(authToken);
@@ -206,6 +213,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 });
 
 async function refreshAccessToken(token: AuthToken): Promise<AuthToken> {
+  if (!token.refreshToken) {
+    return { ...token, error: "ReauthRequired" };
+  }
+
   try {
     const response = await fetch("https://api.intra.42.fr/oauth/token", {
       method: "POST",
@@ -214,7 +225,7 @@ async function refreshAccessToken(token: AuthToken): Promise<AuthToken> {
         client_id: process.env.FORTY_TWO_CLIENT_ID!,
         client_secret: process.env.FORTY_TWO_CLIENT_SECRET!,
         grant_type: "refresh_token",
-        refresh_token: token.refreshToken || "",
+        refresh_token: token.refreshToken,
       } as Record<string, string>),
     });
 
@@ -234,7 +245,11 @@ async function refreshAccessToken(token: AuthToken): Promise<AuthToken> {
     };
   } catch (error) {
     console.error("Erro ao renovar token da Intra:", error);
-    return { ...token, error: "RefreshAccessTokenError" };
+    return {
+      ...token,
+      refreshToken: undefined,
+      error: "RefreshAccessTokenError",
+    };
   }
 }
 
