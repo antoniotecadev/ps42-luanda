@@ -51,7 +51,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt" className="dark">
-      <body className="min-h-screen bg-[rgb(var(--bg))] antialiased">
+      <body className="min-h-screen bg-background antialiased">
         {children}
         <Toaster />
       </body>

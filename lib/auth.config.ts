@@ -1,5 +1,6 @@
 // lib/auth.config.ts
 import type { NextAuthConfig } from "next-auth";
+import { Role } from "@prisma/client";
 
 export const authConfig = {
     session: { strategy: "jwt" }, // Usamos JWT para armazenar as informações do usuário na sessão, permitindo que os dados sejam persistidos e acessíveis em toda a aplicação sem a necessidade de consultas constantes ao banco de dados, o que melhora a performance e escalabilidade da autenticação.
@@ -8,12 +9,33 @@ export const authConfig = {
         error: "/login", // Redireciona para a página de login em caso de erros de autenticação, permitindo que os usuários vejam mensagens de erro relevantes e possam tentar novamente, melhorando a usabilidade e a experiência geral do processo de login.
     },
     callbacks: {
+
+        // 1. ADICIONA ESTE CALLBACK JWT AQUI (Para o Middleware ler o role do Cookie)
+        async jwt({ token, user }) {
+            if (user) {
+                // No primeiro login, o 'user' vem do profile() do Provider
+                token.role = user.role;
+            }
+            return token;
+        },
+
+        // 2. ADICIONA ESTE CALLBACK SESSION AQUI (Para o 'auth' no Middleware ver o role)
+        async session({ session, token }) {
+            if (token && session.user) {
+                session.user.role = token.role as Role;
+            }
+            return session;
+        },
+
         // É aqui que o Middleware decide se pode passar ou não
         authorized({ auth: session, request: { nextUrl } }) {
             const isLoggedIn = !!session?.user;
             const isPublicRoute = ['/', '/login'].includes(nextUrl.pathname);
             const isApiAuthRoute = nextUrl.pathname.startsWith('/api/auth');
             const isStaffRoute = nextUrl.pathname.startsWith('/staff');
+
+            // console.log('Middleware Session:', session);
+            // console.log('Requested URL:', nextUrl.pathname) // Log para debug
 
             /**
              * Lógica de autorização:

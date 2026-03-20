@@ -33,7 +33,7 @@ export interface IntraCampusUser {
 export interface IntraProject {
     id: number
     status: string  // 'finished'|'in_progress'|'searching_a_group'|'creating_group'
-    validated?: boolean
+    "validated?": boolean
     final_mark: number | null
     project: { name: string; slug: string }
     cursus_ids: number[]
@@ -77,9 +77,11 @@ export interface IntraExam {
 
 export class IntraClient {
     private token: string
+    private userId: string;
 
-    constructor(token: string) {
-        this.token = token
+    constructor(token: string, userId: string) {
+        this.token = token;
+        this.userId = userId;
     }
 
     // Método genérico para fazer requisições GET à API 42, incluindo tratamento de erros e configuração de cache.
@@ -115,17 +117,22 @@ export class IntraClient {
     // ── Utilizador autenticado ──────────────────────────────────────────────
 
     async getMe(): Promise<IntraUser> {
-        return this.get<IntraUser>('/me')
+        return this.get<IntraUser>('/me');
     }
 
     async getMyCursus(): Promise<IntraCursusUser[]> {
-        return this.get<IntraCursusUser[]>('/me/cursus_users')
+        console.log("Criando IntraClient com userId:", this.userId);
+
+        return this.get<IntraCursusUser[]>(`/users/${this.userId}/cursus_users`);
     }
 
+    // getMyProjects() é um método que busca os projectos do usuário autenticado, 
+    // filtrando os resultados para incluir apenas aqueles associados ao cursus_id 21 (42cursus), 
+    // usando a função get para fazer a requisição à API da 42 Intra com os parâmetros de filtro apropriados.
     async getMyProjects(): Promise<IntraProject[]> {
         return this.get<IntraProject[]>('/me/projects_users', {
             'filter[cursus_id]': '21',  // cursus_id 21 = 42cursus
-        })
+        });
     }
 
     // getMyScaleTeams() é um método que busca as equipes de avaliação (scale teams) do usuário autenticado, filtrando os resultados para incluir apenas aqueles criados nos últimos 30 dias, usando a função get para fazer a requisição à API da 42 Intra com os parâmetros de filtro apropriados.
@@ -133,13 +140,13 @@ export class IntraClient {
         const since = new Date()
         since.setDate(since.getDate() - 30) // Filtra para os últimos 30 dias, ajustando a data actual para 30 dias atrás, garantindo que apenas as equipes de avaliação criadas nesse período sejam retornadas pela API da 42 Intra.
         return this.get<IntraScaleTeam[]>('/me/scale_teams', {
-            'filter[future]': 'false',
+            'filter[future]': 'false', // Exclui avaliações futuras, garantindo que apenas as avaliações já realizadas sejam consideradas na avaliação de elegibilidade.
             'range[created_at]': `${since.toISOString()},${new Date().toISOString()}`,
         })
     }
 
     async getMyCoalitions(): Promise<IntraCoalition[]> {
-        return this.get<IntraCoalition[]>('/me/coalitions')
+        return this.get<IntraCoalition[]>('/me/coalitions');
     }
 
     // ── Campus ─────────────────────────────────────────────────────────────
@@ -150,17 +157,17 @@ export class IntraClient {
         const future = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000) // 7 dias no futuro, calculando a data actual e adicionando 7 dias para definir o intervalo de tempo para os eventos futuros, garantindo que apenas os eventos que ocorrerão nesse período sejam retornados pela API da 42 Intra.
         return this.get<IntraEvent[]>(`/campus/${campusId}/events`, {
             'range[begin_at]': `${now.toISOString()},${future.toISOString()}`,
-        })
+        });
     }
 
     // getCampusExams() é um método que busca os exames do campus especificado, usando a função get para fazer a requisição à API da 42 Intra sem parâmetros de filtro, retornando todos os exames associados ao campus.
     async getCampusExams(campusId: string): Promise<IntraExam[]> {
-        return this.get<IntraExam[]>(`/campus/${campusId}/exams`)
+        return this.get<IntraExam[]>(`/campus/${campusId}/exams`);
     }
 }
 
 // ── Helper para criar cliente a partir da sessão NextAuth ─────────────────
 
-export function createIntraClient(accessToken: string): IntraClient {
-    return new IntraClient(accessToken)
+export function createIntraClient(accessToken: string, userId: string): IntraClient {
+    return new IntraClient(accessToken, userId);
 }

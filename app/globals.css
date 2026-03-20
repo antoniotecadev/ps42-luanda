@@ -105,14 +105,27 @@
   Isso garante que as variáveis de tema escuro sejam aplicadas apenas quando a classe `dark` estiver presente, permitindo que o modo claro seja o padrão.
 */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
+
+  /* Um fundo azul-escuro profundo (estilo 42) em vez de preto puro */
+  --background: oklch(0.15 0.02 240); 
+  --foreground: oklch(0.98 0 0);
+  
+  /* Cor dos cartões (um pouco mais clara que o fundo) */
+  --card: oklch(0.18 0.02 240);
+  --card-foreground: oklch(0.98 0 0);
+
+  /* A cor principal (Teal da 42) */
+  --primary: oklch(0.75 0.15 170); 
+  --primary-foreground: oklch(0.15 0.02 240);
+
+  /* --background: oklch(0.145 0 0); */
+  /* --foreground: oklch(0.985 0 0); */
+  /* --card: oklch(0.205 0 0); */
+  /* --card-foreground: oklch(0.985 0 0); */
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
+  /* --primary: oklch(0.922 0 0); */
+  /* --primary-foreground: oklch(0.205 0 0); */
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
@@ -138,71 +151,51 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
-/**
-  Define os estilos base para toda a aplicação
-  Os estilos base são aplicados a todos os elementos usando o seletor universal `*`, e incluem bordas e anéis de foco. 
-  O corpo da página é estilizado com as cores de fundo e texto definidas nas variáveis de tema, e a fonte padrão é definida para a fonte sans-serif.
-*/
 @layer base {
-  :root {
-    /* ── Cores base PS42 Luanda ── */
-    --bg:            10 12 16;
-    --surface:       16 20 26;
-    --surface-2:     22 28 36;
-    --surface-3:     30 38 48;
-    --border:        36 46 60;
-
-    /* ── Marca 42 / PS42 ── */
-    --teal:          0 212 170;
-    --teal-dim:      0 212 170 / 0.08;
-    --blue-42:       59 158 255;
-    --red-42:        230 51 41;
-    --gold:          245 166 35;
-
-    /* ── Texto ── */
-    --foreground:    232 237 242;
-    --muted:         74 90 106;
-    --muted-fg:      122 143 160;
-
-    /* ── Status ── */
-    --success:       46 204 113;
-    --warning:       255 140 66;
-    --danger:        255 71 87;
-
-    /* ── shadcn/ui mapping ── */
-    --background:    10 12 16;
-    --card:          16 20 26;
-    --primary:       0 212 170;
-    --primary-foreground: 10 12 16;
-    --secondary:     22 28 36;
-    --secondary-foreground: 232 237 242;
-    --accent:        30 38 48;
-    --accent-foreground: 232 237 242;
-    --radius:        0.25rem;
+  * {
+    @apply border-border outline-ring/50;
   }
-}
-
-@layer base {
-  * { @apply border-border; }
 
   body {
-    @apply bg-[rgb(var(--bg))] text-[rgb(var(--foreground))];
+    @apply bg-background text-foreground;
     font-family: 'DM Sans', sans-serif;
     -webkit-font-smoothing: antialiased;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  /* 
+  html {
+    @apply font-sans;
+  } */
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: 'Syne', sans-serif;
     font-weight: 700;
     letter-spacing: -0.03em;
   }
 
-  code, pre, kbd {
+  code,
+  pre,
+  kbd {
     font-family: 'JetBrains Mono', monospace;
   }
 
   /* Scrollbar custom */
-  ::-webkit-scrollbar { width: 4px; height: 4px; }
-  ::-webkit-scrollbar-track { background: rgb(var(--bg)); }
-  ::-webkit-scrollbar-thumb { background: rgb(var(--border)); border-radius: 2px; }
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: rgb(var(--bg));
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgb(var(--border));
+    border-radius: 2px;
+  }
 }

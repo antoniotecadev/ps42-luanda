@@ -71,6 +71,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             displayName: profile.displayname as string,
             email: profile.email as string,
             avatarUrl: (profile.image as any)?.link,
+            intraLevel: (profile.cursus_users as any)?.[0]?.level || 0,
             role: profile["staff?"] as boolean ? "STAFF" : "STUDENT",
             isEligible: false,
             isBlocked: false,
