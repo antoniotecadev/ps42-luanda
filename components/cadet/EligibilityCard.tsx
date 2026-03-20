@@ -12,9 +12,10 @@ interface Props {
 
 export default function EligibilityCard({ eligibility, hours, className }: Props) {
     const { isEligible, criteria } = eligibility
+    const failedCount = criteria.filter(c => !c.passed).length
 
     return (
-        <div className={`bg-surface border border-[rgb(var(--border))] rounded-sm p-6 ${className}`}>
+        <div className={`bg-surface border border-[rgb(var(--border))] rounded-sm p-6 h-full ${className}`}>
             {/* Status principal */}
             <div className="flex items-center justify-between mb-6">
                 <div>
@@ -37,6 +38,17 @@ export default function EligibilityCard({ eligibility, hours, className }: Props
                     <span className={`font-mono text-sm ${hours.allowed ? 'text-green-400' : 'text-orange-400'}`}>
                         {hours.allowed ? 'Em funcionamento' : 'Fora de horário'}
                     </span>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 mb-4">
+                <div className="border border-[rgb(var(--border))] p-3 rounded-sm">
+                    <p className="font-mono text-[10px] text-[rgb(var(--muted-fg))] uppercase tracking-widest">Critérios OK</p>
+                    <p className="font-display text-2xl font-black text-green-400">{criteria.length - failedCount}</p>
+                </div>
+                <div className="border border-[rgb(var(--border))] p-3 rounded-sm">
+                    <p className="font-mono text-[10px] text-[rgb(var(--muted-fg))] uppercase tracking-widest">Pendentes</p>
+                    <p className="font-display text-2xl font-black text-red-400">{failedCount}</p>
                 </div>
             </div>
 

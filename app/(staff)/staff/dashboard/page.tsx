@@ -28,14 +28,17 @@ export default async function StaffDashboard() {
     ])
 
     return (
-        <div className="min-h-screen p-6 md:p-10">
-            <div className="mb-8">
+        <div className="min-h-screen p-6 md:p-10 max-w-7xl mx-auto">
+            <div className="mb-8 border border-[rgb(var(--border))] bg-surface p-6 rounded-sm">
                 <p className="font-mono text-[10px] text-[rgb(var(--muted-fg))] tracking-widest uppercase mb-1">
                     Centro de Controlo
                 </p>
                 <h1 className="font-display text-3xl font-black tracking-tight">
                     Dashboard Staff
                 </h1>
+                <p className="text-sm text-[rgb(var(--muted-fg))] mt-2">
+                    Aprovações, sessão ativa e estado da fila em tempo real.
+                </p>
             </div>
 
             {/* Métricas */}

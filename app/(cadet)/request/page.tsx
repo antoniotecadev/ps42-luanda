@@ -30,8 +30,8 @@ export default async function RequisicaoPage() {
     const canRequest = eligibility.isEligible && hours.allowed
 
     return (
-        <div className="min-h-screen p-6 md:p-10 max-w-2xl">
-            <div className="mb-8">
+        <div className="min-h-screen p-6 md:p-10 max-w-3xl mx-auto">
+            <div className="mb-8 border border-[rgb(var(--border))] bg-surface p-6 rounded-sm">
                 <p className="font-mono text-[10px] text-[rgb(var(--muted-fg))] tracking-widest uppercase mb-1">
                     Artigo 5.º — Processo de Pedido
                 </p>

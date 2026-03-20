@@ -111,7 +111,22 @@ export default function QueueLive({ userId }: { userId: string }) {
     )
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 max-w-4xl">
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                <div className="border border-[rgb(var(--border))] bg-surface p-3 rounded-sm">
+                    <p className="font-mono text-[10px] text-[rgb(var(--muted-fg))] uppercase tracking-widest">Minha posição</p>
+                    <p className="font-display text-2xl font-black text-teal-400">{state?.myPosition ?? '--'}</p>
+                </div>
+                <div className="border border-[rgb(var(--border))] bg-surface p-3 rounded-sm">
+                    <p className="font-mono text-[10px] text-[rgb(var(--muted-fg))] uppercase tracking-widest">Espera estimada</p>
+                    <p className="font-display text-2xl font-black">{state?.estimatedWaitMin ?? 0} min</p>
+                </div>
+                <div className="border border-[rgb(var(--border))] bg-surface p-3 rounded-sm">
+                    <p className="font-mono text-[10px] text-[rgb(var(--muted-fg))] uppercase tracking-widest">Estado da consola</p>
+                    <p className="font-display text-2xl font-black capitalize">{state?.consoleStatus ?? 'free'}</p>
+                </div>
+            </div>
 
             {/* Sessão Activa */}
             {state?.activeSession ? (
@@ -145,7 +160,7 @@ export default function QueueLive({ userId }: { userId: string }) {
             )}
 
             {/* Fila de espera */}
-            <div>
+            <div className="border border-[rgb(var(--border))] bg-surface rounded-sm p-4">
                 <p className="font-mono text-[10px] text-[rgb(var(--muted-fg))] tracking-widest uppercase mb-3">
                     Fila de Espera ({state?.queue.length || 0})
                 </p>

@@ -10,8 +10,8 @@ import { redirect } from 'next/navigation'
 import { checkEligibility, isWithinOperatingHours } from '@/lib/eligibility'
 import { prisma } from '@/lib/prisma'
 import EligibilityCard from '@/components/cadet/EligibilityCard'
-// import SessionCard from '@/components/cadet/SessionCard'
-// import QueueCard from '@/components/cadet/QueueCard'
+import SessionCard from '@/components/cadet/SessionCard'
+import QueueCard from '@/components/cadet/QueueCard'
 
 export default async function CadeteDashboard() {
     const session = await auth()
@@ -34,9 +34,9 @@ export default async function CadeteDashboard() {
     // console.log("Intra ID:", session.user.intraId);
 
     return (
-        <div className="min-h-screen p-6 md:p-10">
+        <div className="min-h-screen p-6 md:p-10 max-w-7xl mx-auto">
             {/* Header */}
-            <div className="mb-10">
+            <div className="mb-8 border border-[rgb(var(--border))] bg-surface p-6 rounded-sm">
                 <p className="font-mono text-xs text-[rgb(var(--muted-fg))] tracking-widest uppercase mb-1">
                     Bem-vindo de volta
                 </p>
@@ -46,10 +46,13 @@ export default async function CadeteDashboard() {
                         @{session.user.login}
                     </span>
                 </h1>
+                <p className="text-sm text-[rgb(var(--muted-fg))] mt-2">
+                    Acompanhe a tua elegibilidade, estado da sessão e próximos passos num só painel.
+                </p>
             </div>
 
             {/* Grid principal */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
 
                 {/* Card de elegibilidade */}
                 <EligibilityCard
@@ -59,14 +62,14 @@ export default async function CadeteDashboard() {
                 />
 
                 {/* Card de sessão / fila */}
-                {/* {mySession ? (
+                {mySession ? (
                     <SessionCard session={mySession} />
                 ) : (
                     <QueueCard
                         queueCount={queueCount}
                         canRequest={eligibility.isEligible && hours.allowed}
                     />
-                )} */}
+                )}
 
             </div>
         </div>

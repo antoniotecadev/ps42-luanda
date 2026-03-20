@@ -80,18 +80,18 @@ export default function StaffQueuePanel() {
 
     const STATUS_LABEL: Record<string, string> = {
         PENDING: 'Pendente', APPROVED: 'Aprovado',
-        ACTIVE: 'Activo', DONE: 'Concluído', REJECTED: 'Rejeitado',
+        ACTIVE: 'Activo', DONE: 'Concluído', REJECTED: 'Rejeitado', CANCELLED: 'Cancelado',
     }
     const STATUS_COLOR: Record<string, string> = {
         PENDING: 'text-orange-400', APPROVED: 'text-blue-400',
         ACTIVE: 'text-green-400', DONE: 'text-[rgb(var(--muted-fg))]',
-        REJECTED: 'text-red-400',
+        REJECTED: 'text-red-400', CANCELLED: 'text-[rgb(var(--muted-fg))]',
     }
 
     if (loading) return <div className="font-mono text-sm text-[rgb(var(--muted-fg))] animate-pulse">A carregar...</div>
 
     return (
-        <div>
+        <div className="border border-[rgb(var(--border))] bg-surface rounded-sm p-4">
             <p className="font-mono text-[10px] text-[rgb(var(--muted-fg))] tracking-widest uppercase mb-4">
                 Fila em Tempo Real ({sessions.length})
             </p>
@@ -103,10 +103,10 @@ export default function StaffQueuePanel() {
             ) : (
                 <div className="space-y-2">
                     {sessions.map((s) => (
-                        <div key={s.id} className="border border-[rgb(var(--border))] bg-surface p-4 rounded-sm">
+                        <div key={s.id} className="border border-[rgb(var(--border))] bg-background p-4 rounded-sm">
                             <div className="flex items-center justify-between flex-wrap gap-4">
                                 <div>
-                                    <p className="font-medium">{s.user?.displayName}</p>
+                                    <p className="font-medium text-base">{s.user?.displayName}</p>
                                     <p className="font-mono text-xs text-[rgb(var(--muted-fg))]">
                                         @{s.user?.login} · {s.game?.title || 'Sem jogo'}
                                     </p>
@@ -119,29 +119,29 @@ export default function StaffQueuePanel() {
 
                                     {s.status === 'PENDING' && (<>
                                         <button onClick={() => doAction(s.id, 'approve')}
-                                            className="px-3 py-1 bg-teal-400/10 border border-teal-400/30 text-teal-400 font-mono text-xs hover:bg-teal-400/20">
+                                            className="px-3 py-1.5 bg-teal-400/10 border border-teal-400/30 text-teal-400 font-mono text-xs hover:bg-teal-400/20 transition-colors">
                                             Aprovar
                                         </button>
                                         <button onClick={() => doAction(s.id, 'reject')}
-                                            className="px-3 py-1 bg-red-500/10 border border-red-500/30 text-red-400 font-mono text-xs hover:bg-red-500/20">
+                                            className="px-3 py-1.5 bg-red-500/10 border border-red-500/30 text-red-400 font-mono text-xs hover:bg-red-500/20 transition-colors">
                                             Rejeitar
                                         </button>
                                     </>)}
 
                                     {s.status === 'APPROVED' && (
                                         <button onClick={() => doAction(s.id, 'start')}
-                                            className="px-3 py-1 bg-green-500/10 border border-green-500/30 text-green-400 font-mono text-xs hover:bg-green-500/20">
+                                            className="px-3 py-1.5 bg-green-500/10 border border-green-500/30 text-green-400 font-mono text-xs hover:bg-green-500/20 transition-colors">
                                             Iniciar Sessão
                                         </button>
                                     )}
 
                                     {s.status === 'ACTIVE' && (<>
                                         <button onClick={() => doAction(s.id, 'extend')}
-                                            className="px-3 py-1 bg-blue-500/10 border border-blue-500/30 text-blue-400 font-mono text-xs">
+                                            className="px-3 py-1.5 bg-blue-500/10 border border-blue-500/30 text-blue-400 font-mono text-xs hover:bg-blue-500/20 transition-colors">
                                             +60 min
                                         </button>
                                         <button onClick={() => doAction(s.id, 'end')}
-                                            className="px-3 py-1 bg-red-500/10 border border-red-500/30 text-red-400 font-mono text-xs">
+                                            className="px-3 py-1.5 bg-red-500/10 border border-red-500/30 text-red-400 font-mono text-xs hover:bg-red-500/20 transition-colors">
                                             Terminar
                                         </button>
                                     </>)}

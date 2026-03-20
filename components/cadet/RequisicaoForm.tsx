@@ -15,23 +15,28 @@ export default function RequisicaoForm({ games }: Props) {
     async function handleSubmit() {
         setLoading(true); setError('')
 
-        const res = await fetch('/api/sessions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ gameId: gameId || undefined }),
-        })
+        try {
+            const res = await fetch('/api/sessions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ gameId: gameId || undefined }),
+            })
 
-        if (res.ok) {
-            router.push('/queue')
-        } else {
-            const data = await res.json()
-            setError(data.error || 'Erro ao submeter pedido')
+            if (res.ok) {
+                router.push('/queue')
+            } else {
+                const data = await res.json().catch(() => ({}))
+                setError(data.error || 'Erro ao submeter pedido')
+                setLoading(false)
+            }
+        } catch {
+            setError('Não foi possível contactar o servidor. Tenta novamente.')
             setLoading(false)
         }
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 border border-[rgb(var(--border))] bg-surface p-6 rounded-sm">
             {/* Seleccionar jogo */}
             <div>
                 <label className="block font-mono text-[10px] text-[rgb(var(--muted-fg))] tracking-widest uppercase mb-3">
@@ -41,7 +46,7 @@ export default function RequisicaoForm({ games }: Props) {
                     value={gameId}
                     onChange={(e) => setGameId(e.target.value)}
                     className="w-full bg-surface-2 border border-[rgb(var(--border))]
-                     text-sm p-3 font-mono text-[rgb(var(--fg))]
+                     text-sm p-3 font-mono text-foreground
                      focus:border-teal-400 focus:outline-none"
                 >
                     <option value="">Sem preferência</option>
@@ -65,7 +70,7 @@ export default function RequisicaoForm({ games }: Props) {
             <button
                 onClick={handleSubmit}
                 disabled={loading}
-                className="w-full bg-teal-400 text-[rgb(var(--bg))] font-bold
+                className="w-full bg-teal-400 text-[rgb(var(--background))] font-bold
                    font-mono text-sm py-4 tracking-wider
                    hover:bg-teal-300 transition-colors
                    disabled:opacity-50 disabled:cursor-not-allowed"
