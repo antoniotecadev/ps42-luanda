@@ -2,161 +2,173 @@
 // Wrapper centralizado para todas as chamadas à API 42 Intra.
 // Todos os tipos reflectem a estrutura real da API.
 
-const BASE_URL = 'https://api.intra.42.fr/v2'
+const BASE_URL = "https://api.intra.42.fr/v2";
 
 // ── Tipos da API 42 ──────────────────────────────────────────────────────
 
 export interface IntraUser {
-    id: number
-    login: string
-    displayname: string
-    email: string
-    image: { link: string | null }
-    cursus_users: IntraCursusUser[]
-    campus_users: IntraCampusUser[]
-    projects_users: IntraProject[]
+    id: number;
+    login: string;
+    displayname: string;
+    email: string;
+    image: { link: string | null };
+    cursus_users: IntraCursusUser[];
+    campus_users: IntraCampusUser[];
+    projects_users: IntraProject[];
 }
 
 export interface IntraCursusUser {
-    id: number
-    grade: string | null
-    level: number
-    cursus_id: number
-    cursus: { name: string; slug: string }
+    id: number;
+    grade: string | null;
+    level: number;
+    cursus_id: number;
+    cursus: { name: string; slug: string };
 }
 
 export interface IntraCampusUser {
-    campus_id: number
-    is_primary: boolean
+    campus_id: number;
+    is_primary: boolean;
 }
 
 export interface IntraProject {
-    id: number
-    status: string  // 'finished'|'in_progress'|'searching_a_group'|'creating_group'
-    "validated?": boolean
-    final_mark: number | null
-    project: { name: string; slug: string }
-    cursus_ids: number[]
-    created_at: string
-    updated_at: string
+    id: number;
+    status: string; // 'finished'|'in_progress'|'searching_a_group'|'creating_group'
+    "validated?": boolean;
+    final_mark: number | null;
+    project: { name: string; slug: string };
+    cursus_ids: number[];
+    created_at: string;
+    updated_at: string;
 }
 
 export interface IntraScaleTeam {
-    id: number
-    final_mark: number | null
-    comment: string | null
-    created_at: string
+    id: number;
+    final_mark: number | null;
+    comment: string | null;
+    created_at: string;
 }
 
 export interface IntraCoalition {
-    id: number
-    name: string
-    color: string
-    image_url: string | null
-    score: number
+    id: number;
+    name: string;
+    color: string;
+    image_url: string | null;
+    score: number;
 }
 
 export interface IntraEvent {
-    id: number
-    name: string
-    kind: string
-    begin_at: string
-    end_at: string
-    location: string | null
+    id: number;
+    name: string;
+    kind: string;
+    begin_at: string;
+    end_at: string;
+    location: string | null;
 }
 
 export interface IntraExam {
-    id: number
-    name: string
-    begin_at: string
-    end_at: string
-    location: string | null
+    id: number;
+    name: string;
+    begin_at: string;
+    end_at: string;
+    location: string | null;
 }
 
 // ── Classe cliente ────────────────────────────────────────────────────────
 
 export class IntraClient {
-    private token: string
+    private token: string;
     private userId: string;
+    private intraId: number;
 
-    constructor(token: string, userId: string) {
+    constructor(token: string, userId: string, intraId: number) {
         this.token = token;
         this.userId = userId;
+        this.intraId = intraId;
     }
 
     // Método genérico para fazer requisições GET à API 42, incluindo tratamento de erros e configuração de cache.
-    // Record<string, string> é um tipo TypeScript que representa um objecto cujas chaves são strings e os valores também são strings, usado aqui para os parâmetros de consulta da API. 
-    private async get<T>(path: string, params?: Record<string, string>): Promise<T> {
-
+    // Record<string, string> é um tipo TypeScript que representa um objecto cujas chaves são strings e os valores também são strings, usado aqui para os parâmetros de consulta da API.
+    private async get<T>(
+        path: string,
+        params?: Record<string, string>,
+    ): Promise<T> {
         // Construção da URL com parâmetros de consulta, usando a classe URL para garantir a formatação correta, e adicionando os parâmetros fornecidos como query string.
         // Exemplo: se path for '/me/projects_users' e params for { 'filter[cursus_id]': '21' }, isso resultará em uma URL como https://api.intra.42.fr/v2/me/projects_users?filter[cursus_id]=21
-        const url: URL = new URL(`${BASE_URL}${path}`)
+        const url: URL = new URL(`${BASE_URL}${path}`);
 
         if (params) {
-            // Object.entries(params) é uma função JavaScript que retorna um array de pares [chave, valor] para cada propriedade enumerável de um objeto, 
+            // Object.entries(params) é uma função JavaScript que retorna um array de pares [chave, valor] para cada propriedade enumerável de um objeto,
             // permitindo iterar sobre os parâmetros fornecidos e adicioná-los à URL como query string usando url.searchParams.set(k, v).
             // Exemplo: se params for { 'filter[cursus_id]': '21' }, isso resultará em uma URL como https://api.intra.42.fr/v2/me/projects_users?filter[cursus_id]=21
-            Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v))
+            Object.entries(params).forEach(([k, v]) =>
+                url.searchParams.set(k, v),
+            );
         }
 
         const res = await fetch(url.toString(), {
             headers: {
                 Authorization: `Bearer ${this.token}`,
-                'Content-Type': 'application/json',
+                "Content-Type": "application/json",
             },
-            next: { revalidate: 900 },  // cache 15 min
-        })
+            next: { revalidate: 900 }, // cache 15 min
+        });
 
         if (!res.ok) {
-            throw new Error(`Intra API error: ${res.status} ${res.statusText} on ${path}`)
+            throw new Error(
+                `Intra API error: ${res.status} ${res.statusText} on ${path}`,
+            );
         }
 
-        return res.json() as Promise<T>
+        return res.json() as Promise<T>;
     }
 
     // ── Utilizador autenticado ──────────────────────────────────────────────
 
     async getMe(): Promise<IntraUser> {
-        return this.get<IntraUser>('/me');
+        return this.get<IntraUser>("/me");
     }
 
     async getMyCursus(): Promise<IntraCursusUser[]> {
-        console.log("Criando IntraClient com userId:", this.userId);
-
-        return this.get<IntraCursusUser[]>(`/users/${this.userId}/cursus_users`);
+        return this.get<IntraCursusUser[]>(
+            `/users/${this.intraId}/cursus_users`,
+        );
     }
 
-    // getMyProjects() é um método que busca os projectos do usuário autenticado, 
-    // filtrando os resultados para incluir apenas aqueles associados ao cursus_id 21 (42cursus), 
+    // getMyProjects() é um método que busca os projectos do usuário autenticado,
+    // filtrando os resultados para incluir apenas aqueles associados ao cursus 21 (42cursus),
     // usando a função get para fazer a requisição à API da 42 Intra com os parâmetros de filtro apropriados.
     async getMyProjects(): Promise<IntraProject[]> {
-        return this.get<IntraProject[]>('/me/projects_users', {
-            'filter[cursus_id]': '21',  // cursus_id 21 = 42cursus
+        return this.get<IntraProject[]>(`/users/${this.intraId}/projects_users`, {
+            "filter[cursus]": "21", // cursus 21 = 42cursus
         });
     }
 
     // getMyScaleTeams() é um método que busca as equipes de avaliação (scale teams) do usuário autenticado, filtrando os resultados para incluir apenas aqueles criados nos últimos 30 dias, usando a função get para fazer a requisição à API da 42 Intra com os parâmetros de filtro apropriados.
+    // Scale Teams são grupos de avaliação usados para avaliar o desempenho dos alunos em procjetos e actividades, e esse método é importante para verificar se o usuário participou de avaliações recentes, o que pode ser um critério de elegibilidade para certas funcionalidades ou eventos.
     async getMyScaleTeams(): Promise<IntraScaleTeam[]> {
-        const since = new Date()
-        since.setDate(since.getDate() - 30) // Filtra para os últimos 30 dias, ajustando a data actual para 30 dias atrás, garantindo que apenas as equipes de avaliação criadas nesse período sejam retornadas pela API da 42 Intra.
-        return this.get<IntraScaleTeam[]>('/me/scale_teams', {
-            'filter[future]': 'false', // Exclui avaliações futuras, garantindo que apenas as avaliações já realizadas sejam consideradas na avaliação de elegibilidade.
-            'range[created_at]': `${since.toISOString()},${new Date().toISOString()}`,
-        })
+        const since = new Date();
+        since.setDate(since.getDate() - 30); // Filtra para os últimos 30 dias, ajustando a data actual para 30 dias atrás, garantindo que apenas as equipes de avaliação criadas nesse período sejam retornadas pela API da 42 Intra.
+        return this.get<IntraScaleTeam[]>(
+            `/users/${this.intraId}/scale_teams`,
+            {
+                "filter[future]": "false", // Exclui avaliações futuras, garantindo que apenas as avaliações já realizadas sejam consideradas na avaliação de elegibilidade.
+                "range[created_at]": `${since.toISOString()},${new Date().toISOString()}`,
+            },
+        );
     }
 
     async getMyCoalitions(): Promise<IntraCoalition[]> {
-        return this.get<IntraCoalition[]>('/me/coalitions');
+        return this.get<IntraCoalition[]>("/me/coalitions");
     }
 
     // ── Campus ─────────────────────────────────────────────────────────────
 
     // getCampusEvents() é um método que busca os eventos do campus especificado, filtrando os resultados para incluir apenas aqueles que ocorrerão nos próximos 7 dias, usando a função get para fazer a requisição à API da 42 Intra com os parâmetros de filtro apropriados.
     async getCampusEvents(campusId: string): Promise<IntraEvent[]> {
-        const now = new Date()
-        const future = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000) // 7 dias no futuro, calculando a data actual e adicionando 7 dias para definir o intervalo de tempo para os eventos futuros, garantindo que apenas os eventos que ocorrerão nesse período sejam retornados pela API da 42 Intra.
+        const now = new Date();
+        const future = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 dias no futuro, calculando a data actual e adicionando 7 dias para definir o intervalo de tempo para os eventos futuros, garantindo que apenas os eventos que ocorrerão nesse período sejam retornados pela API da 42 Intra.
         return this.get<IntraEvent[]>(`/campus/${campusId}/events`, {
-            'range[begin_at]': `${now.toISOString()},${future.toISOString()}`,
+            "range[begin_at]": `${now.toISOString()},${future.toISOString()}`,
         });
     }
 
@@ -168,6 +180,10 @@ export class IntraClient {
 
 // ── Helper para criar cliente a partir da sessão NextAuth ─────────────────
 
-export function createIntraClient(accessToken: string, userId: string): IntraClient {
-    return new IntraClient(accessToken, userId);
+export function createIntraClient(
+    accessToken: string,
+    userId: string,
+    intraId: number,
+): IntraClient {
+    return new IntraClient(accessToken, userId, intraId);
 }

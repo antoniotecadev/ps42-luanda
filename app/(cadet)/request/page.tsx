@@ -16,7 +16,7 @@ export default async function RequisicaoPage() {
     if (!session?.user) redirect('/login')
 
     const [eligibility, hours, games, myPending] = await Promise.all([
-        checkEligibility(session.user.id, session.user.accessToken),
+        checkEligibility(session.user.id, session.user.intraId, session.user.accessToken),
         Promise.resolve(isWithinOperatingHours()),
         prisma.game.findMany({ where: { isApproved: true }, orderBy: { title: 'asc' } }),
         prisma.session.findFirst({
@@ -25,7 +25,7 @@ export default async function RequisicaoPage() {
     ])
 
     // Se já tem sessão activa, redireciona para a fila
-    if (myPending) redirect('/fila')
+    if (myPending) redirect('/queue')
 
     const canRequest = eligibility.isEligible && hours.allowed
 

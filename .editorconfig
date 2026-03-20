@@ -1,0 +1,9 @@
+root = true
+
+[*]
+indent_style = space # Usa espaços para indentação
+indent_size = 4 # Tamanho da indentação (4 espaços)
+charset = utf-8 # Define o charset como UTF-8
+trim_trailing_whitespace = true # Remove espaços em branco no final das linhas
+insert_final_newline = true # Insere uma nova linha no final do arquivo
+end_of_line = lf # Usa LF para quebras de linha (Unix-style)

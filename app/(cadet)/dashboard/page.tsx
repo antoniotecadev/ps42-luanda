@@ -19,7 +19,7 @@ export default async function CadeteDashboard() {
 
     // Buscar dados em paralelo
     const [eligibility, hours, mySession, queueCount] = await Promise.all([
-        checkEligibility(session.user.id, session.user.accessToken),
+        checkEligibility(session.user.id, session.user.intraId, session.user.accessToken),
         Promise.resolve(isWithinOperatingHours()),
         prisma.session.findFirst({
             where: { userId: session.user.id, status: { in: ['PENDING', 'APPROVED', 'ACTIVE'] } },
@@ -30,7 +30,8 @@ export default async function CadeteDashboard() {
         }),
     ])
 
-    console.log("Acess Token:", session.user.accessToken);
+    // console.log("AcessToken:", session.user.accessToken);
+    // console.log("Intra ID:", session.user.intraId);
 
     return (
         <div className="min-h-screen p-6 md:p-10">

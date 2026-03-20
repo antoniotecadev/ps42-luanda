@@ -9,12 +9,12 @@ export default async function CadeteQueue() {
 
     // Verificar elegibilidade e horas de funcionamento
     const [eligibility, hours] = await Promise.all([
-        checkEligibility(session.user.id, session.user.accessToken),
+        checkEligibility(session.user.id, session.user.intraId, session.user.accessToken),
         Promise.resolve(isWithinOperatingHours()),
     ])
 
     if (!eligibility.isEligible || !hours.allowed) {
-        redirect('/cadet/dashboard')
+        redirect('/dashboard')
     }
 
     return (

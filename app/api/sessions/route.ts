@@ -47,6 +47,7 @@ export async function POST(request: NextRequest) {
     // 2. Verificar elegibilidade — Art. 3
     const eligibility = await checkEligibility(
         session.user.id,
+        session.user.intraId,
         session.user.accessToken
     )
     if (!eligibility.isEligible) {

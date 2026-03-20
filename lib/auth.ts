@@ -17,7 +17,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       type: "oauth", // Tipo de autenticação, neste caso OAuth para integração com a API da 42 Intra
       clientId: process.env.FORTY_TWO_CLIENT_ID,
       clientSecret: process.env.FORTY_TWO_CLIENT_SECRET,
-      authorization: "https://api.intra.42.fr/oauth/authorize?scope=public",
+      authorization: {
+        url: "https://api.intra.42.fr/oauth/authorize", // URL de autorização da 42 Intra, incluindo os escopos necessários para acessar as informações do usuário e seus projectos, grupos e eventos
+        params: { scope: "public profile projects" },
+      },
       // URLs para obtenção do token de acesso e informações do usuário, conforme a API da 42 Intra
       token: "https://api.intra.42.fr/oauth/token",
       userinfo: "https://api.intra.42.fr/v2/me",
@@ -48,11 +51,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
     // user: Vem da função profile() do seu Provider (dados da 42 Intra).
     // account: Contém informações sobre a conta de autenticação, como o tipo de provedor e tokens de acesso.
-    // profile: Recebe os dados do usuário retornados pela API da 42 Intra após a autenticação, 
-    // e é responsável por mapear esses dados para o formato esperado pelo NextAuth, 
+    // profile: Recebe os dados do usuário retornados pela API da 42 Intra após a autenticação,
+    // e é responsável por mapear esses dados para o formato esperado pelo NextAuth,
     // incluindo campos personalizados como role, isEligible e isBlocked, que são usados posteriormente no processo de autorização e gerenciamento de sessões.
     async signIn({ user, account, profile }) {
       if (!profile || !account) return false;
+
+      const intraId = profile?.id; // Garante que pega de um ou de outro
+
+      if (!intraId) {
+        console.error("Profile ID não encontrado:", profile);
+        return false; // Bloqueia o login se não houver ID
+      }
 
       try {
         // Criar ou actualizar o utilizador na nossa DB
@@ -72,7 +82,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             email: profile.email as string,
             avatarUrl: (profile.image as any)?.link,
             intraLevel: (profile.cursus_users as any)?.[0]?.level || 0,
-            role: profile["staff?"] as boolean ? "STAFF" : "STUDENT",
+            role: (profile["staff?"] as boolean) ? "STAFF" : "STUDENT",
             isEligible: false,
             isBlocked: false,
             lastSyncAt: new Date(),
@@ -89,7 +99,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
      * jwt() é o "Escritor" (Lado do Servidor)
      * O callback jwt só roda em momentos específicos (quando o token é criado ou actualizado).
      * Onde ele vive? No cookie criptografado que fica no navegador do usuário.
-     * Por que salvar aqui? Porque o Middleware (proxy.ts) só consegue ler o que está dentro do token. 
+     * Por que salvar aqui? Porque o Middleware (proxy.ts) só consegue ler o que está dentro do token.
      * Se você não salvar o role no token, o Middleware nunca saberá que você é um "STAFF" e não conseguirá proteger as rotas sem consultar o banco de dados toda hora.
      */
 
@@ -105,9 +115,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         // Na primeira vez que o JWT é criado, buscamos os dados reais do banco
         const dbUser = await prisma.user.findFirst({
-          where: { email: token.email! }
+          where: { email: token.email! },
         });
         token.id = dbUser?.id || user.id;
+        token.intraId = dbUser?.intraId || user.intraId;
         token.role = dbUser?.role || user.role;
         token.login = dbUser?.login || user.login;
         token.isEligible = dbUser?.isEligible || user.isEligible;
@@ -124,28 +135,29 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           accessToken: account.access_token,
           refreshToken: account.refresh_token,
           expiresAt: account.expires_at ? account.expires_at * 1000 : 0, // Converter para ms
-        }
+        };
       }
 
       // Se o token ainda não expirou, apenas retorna o token atual
       if (Date.now() < (token.expiresAt as number)) {
-        return token
+        return token;
       }
 
       // SE CHEGOU AQUI, O TOKEN DA INTRA EXPIROU!
       // Precisamos de pedir um novo à 42 usando o refreshToken
-      return refreshAccessToken(token)
+      return refreshAccessToken(token);
     },
     /**
      * O session() é o "Tradutor" (Interface do Usuário)
      * O callback session decide o que o seu código (Client Components ou Server Components) vai enxergar quando você chama useSession() ou auth().
      * Onde ele vive? Na memória da aplicação durante a requisição.
-     * Por que extrair do token? Por padrão, o objeto session do NextAuth é muito magro (só traz nome, e-mail e imagem). 
+     * Por que extrair do token? Por padrão, o objeto session do NextAuth é muito magro (só traz nome, e-mail e imagem).
      * Se você quer que o seu componente Navbar.tsx saiba o seu login da 42 ou o seu role, você precisa "injetar" esses dados que estavam escondidos no token para dentro do objeto de sessão.
      */
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
+        session.user.intraId = token.intraId as number;
         session.user.role = token.role as Role;
         session.user.login = token.login as string;
         session.user.isEligible = token.isEligible as boolean;
@@ -168,27 +180,27 @@ async function refreshAccessToken(token: any) {
         grant_type: "refresh_token",
         refresh_token: token.refreshToken,
       }),
-    })
+    });
 
-    const refreshedTokens = await response.json()
+    const refreshedTokens = await response.json();
 
-    if (!response.ok) throw refreshedTokens
+    if (!response.ok) throw refreshedTokens;
 
     return {
       ...token,
       accessToken: refreshedTokens.access_token,
       expiresAt: Date.now() + refreshedTokens.expires_in * 1000,
       refreshToken: refreshedTokens.refresh_token ?? token.refreshToken, // A 42 pode ou não enviar um novo refresh_token
-    }
+    };
   } catch (error) {
-    console.error("Erro ao renovar token da Intra:", error)
-    return { ...token, error: "RefreshAccessTokenError" }
+    console.error("Erro ao renovar token da Intra:", error);
+    return { ...token, error: "RefreshAccessTokenError" };
   }
 }
 
 /*
  * NextAuth Callbacks Reference
- * 
+ *
  * | Callback   | Quando executa?                                      | Frequência                        |
  * |------------|------------------------------------------------------|-----------------------------------|
  * | signIn     | Apenas no momento do login.                          | Uma vez por login.                |
