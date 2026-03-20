@@ -48,17 +48,23 @@ export async function checkEligibility(
     // 2. Buscar dados necessários em paralelo
     const intra = createIntraClient(accessToken, userId, intraId);
 
-    const [cursusData, projects, scaleTeams, dbUser, activeRecords] =
+    const [cursusData, projects, scaleTeamsResult, dbUser, activeRecords] =
         await Promise.all([
             intra.getMyCursus().catch(() => []), // Cursus do usuário, incluindo nível e progresso
             intra.getMyProjects().catch(() => []), // Projetos do usuário, para avaliar atrasos e falhas
-            intra.getMyScaleTeams().catch(() => []), // Avaliações recentes do usuário, para calcular a média de avaliações
+            intra
+                .getMyScaleTeams() // Avaliações recentes do usuário, para calcular a média de avaliações
+                .then((data) => ({ data, unavailable: false })) // Se a API responder, retorna os dados normalmente
+                .catch(() => ({ data: [], unavailable: true })), 
             prisma.user.findUnique({ where: { id: userId } }), // Dados do usuário na nossa base de dados, incluindo role, isEligible e isBlocked
             prisma.disciplinaryRecord.findMany({
                 // Registros disciplinares activos do usuário, para avaliar sanções e bloqueios, filtrando apenas aqueles que estão activos (isActive: true) para garantir que apenas sanções em vigor sejam consideradas na avaliação de elegibilidade.
                 where: { userId, isActive: true },
             }),
         ]);
+
+    const scaleTeams = scaleTeamsResult.data;
+    const scaleTeamsUnavailable = scaleTeamsResult.unavailable;
 
     // console.log("cursusData:", cursusData);
     // console.log("projects:", projects);
@@ -116,6 +122,7 @@ export async function checkEligibility(
             label: "Média avaliações > 3/mês",
             article: "Art. 3.º-d",
             passed: (() => {
+                if (scaleTeamsUnavailable) return true;
                 const validEvals = scaleTeams.filter(
                     (s) => s.final_mark !== null,
                 );
@@ -129,6 +136,9 @@ export async function checkEligibility(
                 return avg > 3;
             })(),
             reason: (() => {
+                if (scaleTeamsUnavailable) {
+                    return "Verificação temporariamente indisponível (API 42).";
+                }
                 const validEvals = scaleTeams.filter(
                     (s) => s.final_mark !== null,
                 );
