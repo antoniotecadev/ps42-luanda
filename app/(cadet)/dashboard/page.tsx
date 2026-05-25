@@ -12,13 +12,14 @@ import { prisma } from '@/lib/prisma'
 import EligibilityCard from '@/components/cadet/EligibilityCard'
 import SessionCard from '@/components/cadet/SessionCard'
 import QueueCard from '@/components/cadet/QueueCard'
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 
 export default async function CadeteDashboard() {
     const session = await auth()
     if (!session?.user) redirect('/login')
 
     // Buscar dados em paralelo
-    const [eligibility, hours, mySession, queueCount] = await Promise.all([
+    const [eligibility, hours, mySession, queueCount, dbUser] = await Promise.all([
         checkEligibility(session.user.id, session.user.intraId, session.user.accessToken),
         Promise.resolve(isWithinOperatingHours()),
         prisma.session.findFirst({
@@ -28,6 +29,7 @@ export default async function CadeteDashboard() {
         prisma.session.count({
             where: { status: { in: ['PENDING', 'APPROVED'] } },
         }),
+        prisma.user.findUnique({ where: { id: session.user.id }, select: { avatarUrl: true } }),
     ])
 
     // console.log("AcessToken:", session.user.accessToken);
@@ -37,15 +39,24 @@ export default async function CadeteDashboard() {
         <div className="min-h-screen p-6 md:p-10 max-w-7xl mx-auto">
             {/* Header */}
             <div className="mb-8 border border-[rgb(var(--border))] bg-surface p-6 rounded-sm">
-                <p className="font-mono text-xs text-[rgb(var(--muted-fg))] tracking-widest uppercase mb-1">
-                    Bem-vindo de volta
-                </p>
-                <h1 className="font-display text-3xl font-black tracking-tight">
-                    {session.user.name}
-                    <span className="text-teal-400 ml-2 text-xl font-mono">
-                        @{session.user.login}
-                    </span>
-                </h1>
+                <div className="flex items-center gap-4">
+                    <Avatar size="lg">
+                        {dbUser?.avatarUrl ? (
+                            <AvatarImage src={dbUser.avatarUrl} alt={session.user.name ?? session.user.login} />
+                        ) : session.user.image ? (
+                            <AvatarImage src={session.user.image as string} alt={session.user.name ?? session.user.login} />
+                        ) : (
+                            <AvatarFallback>{(session.user.name || session.user.login || 'U')[0]}</AvatarFallback>
+                        )}
+                    </Avatar>
+                    <div>
+                        <p className="font-mono text-xs text-[rgb(var(--muted-fg))] tracking-widest uppercase mb-1">Bem-vindo de volta</p>
+                        <h1 className="font-display text-3xl font-black tracking-tight">
+                            {session.user.name}
+                            <span className="text-teal-400 ml-2 text-xl font-mono">@{session.user.login}</span>
+                        </h1>
+                    </div>
+                </div>
                 <p className="text-sm text-[rgb(var(--muted-fg))] mt-2">
                     Acompanhe a tua elegibilidade, estado da sessão e próximos passos num só painel.
                 </p>
