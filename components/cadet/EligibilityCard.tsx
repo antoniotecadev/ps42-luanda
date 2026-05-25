@@ -33,7 +33,7 @@ export default function EligibilityCard({ eligibility, hours, className }: Props
                 {/* Horário */}
                 <div className="text-right">
                     <p className="font-mono text-[10px] text-[rgb(var(--muted-fg))] tracking-widest uppercase mb-1">
-                        Horário
+                        Horário (Art. 4a — Seg a Sex: 08h às 17h)
                     </p>
                     <span className={`font-mono text-sm ${hours.allowed ? 'text-green-400' : 'text-orange-400'}`}>
                         {hours.allowed ? 'Em funcionamento' : 'Fora de horário'}
