@@ -1,7 +1,5 @@
 // components/cadete/EligibilityCard.tsx
 
-'use client'
-
 import type { EligibilityResult } from '@/lib/eligibility'
 
 interface Props {

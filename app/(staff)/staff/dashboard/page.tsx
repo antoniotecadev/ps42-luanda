@@ -37,7 +37,7 @@ export default async function StaffDashboard() {
                     Dashboard Staff
                 </h1>
                 <p className="text-sm text-[rgb(var(--muted-fg))] mt-2">
-                    Aprovações, sessão ativa e estado da fila em tempo real.
+                    Aprovações, sessão activa e estado da fila em tempo real.
                 </p>
             </div>
 
