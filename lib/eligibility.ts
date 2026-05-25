@@ -24,6 +24,9 @@ export interface EligibilityResult {
 
 const CACHE_TTL = 900; // 15 minutos em segundos
 const LUANDA_CURSUS_ID = 21; // cursus_id do 42cursus — confirmar com staff
+const REDIS_CACHE_ENABLED = Boolean(
+    process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN,
+);
 
 // ── Motor Principal ───────────────────────────────────────────────────────
 
@@ -37,12 +40,13 @@ export async function checkEligibility(
 ): Promise<EligibilityResult> {
     // 1. Verificar cache Redis
     const cacheKey = `eligibility:${userId}`;
-    try {
-        const cached = await redis.get<EligibilityResult>(cacheKey);
-        if (cached) return { ...cached, cacheHit: true };
-    } catch (e) {
-        // Cache indisponível — continuar sem cache
-        console.error("Erro ao acessar o cache Redis:", e);
+    if (REDIS_CACHE_ENABLED) {
+        try {
+            const cached = await redis.get<EligibilityResult>(cacheKey);
+            if (cached) return { ...cached, cacheHit: true };
+        } catch {
+            // Cache indisponível — continuar sem cache
+        }
     }
 
     // 2. Buscar dados necessários em paralelo
@@ -258,9 +262,9 @@ export async function checkEligibility(
         // Cachear resultado no Redis com TTL, garantindo que os resultados de elegibilidade sejam armazenados em cache para acesso rápido,
         // e que o cache seja actualizado sempre que a função de verificação de elegibilidade for executada,
         // com um tempo de expiração definido para garantir que os dados não fiquem desatualizados.
-        redis
-            .set(cacheKey, result, { ex: CACHE_TTL })
-            .catch((err) => console.error("Erro ao gravar no Upstash:", err)),
+        REDIS_CACHE_ENABLED
+            ? redis.set(cacheKey, result, { ex: CACHE_TTL }).catch(() => undefined)
+            : Promise.resolve(undefined),
     ]);
 
     return result;
