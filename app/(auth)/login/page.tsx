@@ -1,6 +1,18 @@
 // app/(auth)/login/page.tsx
 import { signInWith42 } from '@/action/auth-actions'
-export default function LoginPage() {
+
+type LoginPageProps = {
+    searchParams?: Promise<{
+        error?: string | string[]
+    }>
+}
+
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+    const resolvedSearchParams = await searchParams
+    const status = Array.isArray(resolvedSearchParams?.status)
+        ? resolvedSearchParams.status[0]
+        : resolvedSearchParams?.status
+
     return (
         <div className="min-h-screen flex items-center justify-center bg-[rgb(var(--bg))]">
             <div className="text-center space-y-8 p-8">
@@ -12,6 +24,12 @@ export default function LoginPage() {
                         Zona de Descompressão · 42 Luanda
                     </p>
                 </div>
+
+                {status === 'unavailable' && (
+                    <div className="mx-auto max-w-md rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+                        A base de dados não está disponível no momento. Por favor tenta de novo mais tarde ou contacta o administrador.
+                    </div>
+                )}
 
                 <form action={signInWith42}>
                     <button

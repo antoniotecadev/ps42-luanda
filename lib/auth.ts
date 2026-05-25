@@ -28,6 +28,19 @@ type AuthToken = JWT & {
   error?: string;
 };
 
+function isDatabaseConnectivityError(error: unknown) {
+  if (!(error instanceof Error)) return false;
+
+  const message = `${error.name}: ${error.message}`.toLowerCase();
+  return (
+    message.includes("prismaclientinitializationerror") ||
+    message.includes("enotfound") ||
+    message.includes("can't reach database server") ||
+    message.includes("could not translate host name") ||
+    message.includes("tenant/user")
+  );
+}
+
 // Configuração do NextAuth para autenticação com a 42 Intra, usando o adaptador Prisma para integração com a nossa base de dados,
 // e callbacks para sincronizar os dados do usuário e enriquecer a sessão com informações adicionais do banco de dados,
 // como papel, elegibilidade e status de bloqueio. Também definimos páginas personalizadas para login e erros de autenticação.
@@ -121,7 +134,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           },
         });
       } catch (error) {
-        console.error("Erro no upsert do Prisma:", error);
+        // Não expor detalhes técnicos ao utilizador; registar mensagem sanitizada
+        if (isDatabaseConnectivityError(error)) {
+          console.error("Erro no upsert do Prisma: Database connectivity failure.");
+          return "/login?status=unavailable";
+        }
+
+        const userFacingMessage = error instanceof Error ? error.message : String(error);
+        console.error("Erro no upsert do Prisma:", userFacingMessage);
         return false;
       }
       return true;

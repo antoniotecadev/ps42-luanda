@@ -75,7 +75,7 @@ enum ReportCategory {
 }
 
 enum ReportStatus {
-  OPEN 
+  OPEN
   REVIEWING
   RESOLVED
   DISMISSED
@@ -391,5 +391,3 @@ model SystemConfig {
 
   @@map("system_config")
 }
-
-
