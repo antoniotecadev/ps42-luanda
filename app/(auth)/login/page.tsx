@@ -4,6 +4,7 @@ import { signInWith42 } from '@/action/auth-actions'
 type LoginPageProps = {
     searchParams?: Promise<{
         error?: string | string[]
+        status?: string | string[]
     }>
 }
 
