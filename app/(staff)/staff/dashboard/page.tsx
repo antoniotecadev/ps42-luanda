@@ -2,7 +2,7 @@
 
 /**
  * Centro de controlo operacional. Vê a fila em tempo real, 
- * a sessão activa, alertas de novos pedidos e métricas do dia.
+ * a sessão ativa, alertas de novos pedidos e métricas do dia.
  */
 
 import { auth } from '@/lib/auth'
@@ -34,10 +34,10 @@ export default async function StaffDashboard() {
                     Centro de Controlo
                 </p>
                 <h1 className="font-display text-3xl font-black tracking-tight">
-                    Dashboard Staff
+                    Painel Staff
                 </h1>
                 <p className="text-sm text-[rgb(var(--muted-fg))] mt-2">
-                    Aprovações, sessão activa e estado da fila em tempo real.
+                    Aprovações, sessão ativa e estado da fila em tempo real.
                 </p>
             </div>
 
@@ -45,7 +45,7 @@ export default async function StaffDashboard() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-8">
                 {[
                     { label: 'Sessões hoje', value: totalToday, color: 'text-teal-400' },
-                    { label: 'Activas agora', value: activeNow, color: 'text-green-400' },
+                    { label: 'Ativas agora', value: activeNow, color: 'text-green-400' },
                     { label: 'Pendentes', value: pendingCount, color: 'text-orange-400' },
                     { label: 'Denúncias abertas', value: reportsOpen, color: 'text-red-400' },
                 ].map(m => (

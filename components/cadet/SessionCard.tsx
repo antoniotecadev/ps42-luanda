@@ -1,5 +1,3 @@
-'use client'
-
 import Link from 'next/link'
 
 interface SessionCardProps {
@@ -17,7 +15,7 @@ interface SessionCardProps {
 const STATUS_LABEL: Record<SessionCardProps['session']['status'], string> = {
     PENDING: 'Pendente',
     APPROVED: 'Aprovada',
-    ACTIVE: 'Activa',
+    ACTIVE: 'Ativa',
     DONE: 'Concluída',
     REJECTED: 'Rejeitada',
     CANCELLED: 'Cancelada',
@@ -34,7 +32,7 @@ const STATUS_COLOR: Record<SessionCardProps['session']['status'], string> = {
 
 export default function SessionCard({ session }: SessionCardProps) {
     return (
-        <div className="bg-surface border border-[rgb(var(--border))] rounded-sm p-6 h-full">
+        <div className="bg-surface border border-[rgb(var(--border))] rounded-sm p-5 sm:p-6 h-full shadow-sm">
             <p className="font-mono text-[10px] text-[rgb(var(--muted-fg))] tracking-widest uppercase mb-2">
                 A tua sessão
             </p>
@@ -46,12 +44,12 @@ export default function SessionCard({ session }: SessionCardProps) {
                 </span>
             </div>
 
-            <div className="space-y-2 mb-6">
+            <div className="space-y-2 mb-6 border border-[rgb(var(--border))] rounded-sm p-3 bg-[rgb(var(--background))]/30">
                 <p className="text-sm text-[rgb(var(--muted-fg))]">
                     Pedido feito às {new Date(session.requestedAt).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}
                 </p>
                 {session.queuePos ? (
-                    <p className="text-sm text-[rgb(var(--muted-fg))]">Posição atual na fila: #{session.queuePos}</p>
+                    <p className="text-sm text-[rgb(var(--muted-fg))]">Posição atual na fila: <span className="text-teal-300 font-mono">#{session.queuePos}</span></p>
                 ) : null}
                 {session.status === 'ACTIVE' && session.durationMin ? (
                     <p className="text-sm text-teal-400">Tempo da sessão: {session.durationMin} min</p>
@@ -61,7 +59,7 @@ export default function SessionCard({ session }: SessionCardProps) {
             <div className="flex gap-2">
                 <Link
                     href="/queue"
-                    className="flex-1 text-center px-3 py-2 border border-teal-400/30 bg-teal-400/10 text-teal-400 font-mono text-xs hover:bg-teal-400/20 transition-colors"
+                    className="flex-1 text-center px-3 py-3 border border-teal-400/30 bg-teal-400/10 text-teal-400 font-mono text-xs hover:bg-teal-400/20 transition-colors rounded-sm"
                 >
                     VER FILA AO VIVO
                 </Link>

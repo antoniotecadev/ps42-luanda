@@ -2,7 +2,7 @@
 
 /**
  * Painel do staff para aprovar, rejeitar, 
- * iniciar e terminar sessões. Com actualizações em tempo real via Pusher.
+ * iniciar e terminar sessões. Com atualizações em tempo real via Pusher.
  */
 
 'use client'
@@ -80,7 +80,7 @@ export default function StaffQueuePanel() {
 
     const STATUS_LABEL: Record<string, string> = {
         PENDING: 'Pendente', APPROVED: 'Aprovado',
-        ACTIVE: 'Activo', DONE: 'Concluído', REJECTED: 'Rejeitado', CANCELLED: 'Cancelado',
+        ACTIVE: 'Ativo', DONE: 'Concluído', REJECTED: 'Rejeitado', CANCELLED: 'Cancelado',
     }
     const STATUS_COLOR: Record<string, string> = {
         PENDING: 'text-orange-400', APPROVED: 'text-blue-400',
@@ -98,7 +98,7 @@ export default function StaffQueuePanel() {
 
             {sessions.length === 0 ? (
                 <div className="border border-[rgb(var(--border))] p-8 text-center">
-                    <p className="text-[rgb(var(--muted-fg))] font-mono text-sm">Sem pedidos activos</p>
+                    <p className="text-[rgb(var(--muted-fg))] font-mono text-sm">Sem pedidos ativos</p>
                 </div>
             ) : (
                 <div className="space-y-2">

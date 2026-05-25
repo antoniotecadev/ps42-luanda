@@ -249,13 +249,65 @@ async function refreshAccessToken(token: AuthToken): Promise<AuthToken> {
       } as Record<string, string>),
     });
 
-    const refreshedTokens = (await response.json()) as {
+    const responseText = await response.text();
+    let refreshedTokens: {
       access_token: string;
       expires_in: number;
+      error?: string;
+      error_description?: string;
       refresh_token?: string;
     };
 
-    if (!response.ok) throw refreshedTokens;
+    try {
+      refreshedTokens = responseText
+        ? (JSON.parse(responseText) as {
+            access_token: string;
+            expires_in: number;
+            error?: string;
+            error_description?: string;
+            refresh_token?: string;
+          })
+        : ({} as {
+            access_token: string;
+            expires_in: number;
+            error?: string;
+            error_description?: string;
+            refresh_token?: string;
+          });
+    } catch {
+      refreshedTokens = {} as {
+        access_token: string;
+        expires_in: number;
+        error?: string;
+        error_description?: string;
+        refresh_token?: string;
+      };
+    }
+
+    if (!response.ok) {
+      const detail =
+        refreshedTokens.error_description ??
+        refreshedTokens.error ??
+        responseText ??
+        `HTTP ${response.status}`;
+
+      console.error(
+        `Erro ao renovar token da Intra (status ${response.status}): ${detail}`,
+      );
+
+      return {
+        ...token,
+        refreshToken: undefined,
+        error:
+          refreshedTokens.error === "invalid_grant"
+            ? "ReauthRequired"
+            : "RefreshAccessTokenError",
+      };
+    }
+
+    if (!refreshedTokens.access_token || !refreshedTokens.expires_in) {
+      throw new Error("Resposta inválida ao renovar token da Intra.");
+    }
 
     return {
       ...token,
@@ -264,7 +316,13 @@ async function refreshAccessToken(token: AuthToken): Promise<AuthToken> {
       refreshToken: refreshedTokens.refresh_token ?? token.refreshToken, // A 42 pode ou não enviar um novo refresh_token
     };
   } catch (error) {
-    console.error("Erro ao renovar token da Intra:", error);
+    const detail =
+      error instanceof Error
+        ? error.message
+        : typeof error === "string"
+          ? error
+          : "erro desconhecido";
+    console.error(`Erro ao renovar token da Intra: ${detail}`);
     return {
       ...token,
       refreshToken: undefined,

@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
         }, { status: 403 })
     }
 
-    // 3. Verificar se já tem sessão activa/pendente
+    // 3. Verificar se já tem sessão ativa/pendente
     const existing = await prisma.session.findFirst({
         where: {
             userId: session.user.id,
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
         },
     })
     if (existing) {
-        return NextResponse.json({ error: 'Já tens uma sessão activa ou pendente' }, { status: 409 })
+        return NextResponse.json({ error: 'Já tens uma sessão ativa ou pendente' }, { status: 409 })
     }
 
     // 4. Validar body
@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
             break
         } catch (error) {
             if (error instanceof Error && error.message === 'SESSION_CONFLICT') {
-                return NextResponse.json({ error: 'Já tens uma sessão activa ou pendente' }, { status: 409 })
+                return NextResponse.json({ error: 'Já tens uma sessão ativa ou pendente' }, { status: 409 })
             }
 
             if (
@@ -164,7 +164,7 @@ export async function POST(request: NextRequest) {
         queueSize: txResult.queueSize,
     })
 
-    // 8. Actualizar fila para todos
+    // 8. Atualizar fila para todos
     await pusherServer.trigger(CHANNELS.QUEUE, EVENTS.QUEUE_UPDATED, {
         position: txResult.queueSize,
         userId: session.user.id,

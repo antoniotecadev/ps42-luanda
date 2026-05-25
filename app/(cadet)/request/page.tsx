@@ -24,7 +24,7 @@ export default async function RequisicaoPage() {
         }),
     ])
 
-    // Se já tem sessão activa, redireciona para a fila
+    // Se já tem sessão ativa, redireciona para a fila
     if (myPending) redirect('/queue')
 
     const canRequest = eligibility.isEligible && hours.allowed
@@ -46,7 +46,7 @@ export default async function RequisicaoPage() {
             {!canRequest ? (
                 <div className="border border-red-500/30 bg-red-500/5 p-6 rounded-sm">
                     <p className="text-red-400 font-mono text-sm">
-                        {!hours.allowed ? hours.reason : 'Não elegível para requisitar sessão. Verifica os critérios no teu dashboard.'}
+                        {!hours.allowed ? hours.reason : 'Não elegível para requisitar sessão. Verifica os critérios no teu painel.'}
                     </p>
                 </div>
             ) : (

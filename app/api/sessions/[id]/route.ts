@@ -23,7 +23,7 @@ import {
 } from "@/lib/session-workflow";
 
 const SessionActionSchema = z.object({
-    action: z.enum(SESSION_ACTIONS), // Valida que a acção é uma das permitidas
+    action: z.enum(SESSION_ACTIONS), // Valida que a ação é uma das permitidas
     note: z.string().max(500).optional(), // Nota opcional para ações de staff, com limite de 500 caracteres
 });
 
@@ -42,7 +42,7 @@ export async function PATCH(
     );
 
     if (!parsed.success) {
-        return NextResponse.json({ error: "Acção inválida" }, { status: 400 });
+        return NextResponse.json({ error: "Ação inválida" }, { status: 400 });
     }
 
     const { action, note } = parsed.data;
@@ -79,7 +79,7 @@ export async function PATCH(
                         return { error: "FORBIDDEN" as const };
                     }
 
-                    // Verificar se a acção é permitida no estado actual da sessão
+                    // Verificar se a ação é permitida no estado atual da sessão
                     if (!canApplyAction(current.status, action)) {
                         return {
                             error: "INVALID_STATE" as const,
@@ -87,7 +87,7 @@ export async function PATCH(
                         };
                     }
 
-                    // Se a acção for "start", verificar se já existe uma sessão activa
+                    // Se a ação for "start", verificar se já existe uma sessão ativa
                     if (action === "start") {
                         const activeSession = await tx.session.findFirst({
                             where: { status: "ACTIVE" },
@@ -99,14 +99,14 @@ export async function PATCH(
                         }
                     }
 
-                    // Gerar os dados de actualização com base na acção e se o actor é staff ou não
+                    // Gerar os dados de atualização com base na ação e se o actor é staff ou não
                     const updateData = getUpdateData(
                         action as SessionAction,
                         isStaff,
                         note,
                     );
 
-                    // Actualizar a sessão com os novos dados
+                    // Atualizar a sessão com os novos dados
                     const updated = await tx.session.update({
                         where: { id },
                         data: updateData,
@@ -117,7 +117,7 @@ export async function PATCH(
                         await reindexQueuePositions(tx);
                     }
 
-                    // Criar um registo de auditoria para esta acção, incluindo os dados antes e depois da actualização
+                    // Criar um registo de auditoria para esta ação, incluindo os dados antes e depois da atualização
                     await tx.auditLog.create({
                         data: {
                             actorId: session.user.id,
@@ -135,7 +135,7 @@ export async function PATCH(
                         },
                     });
 
-                    // Retornar os dados actualizados e o status anterior para uso posterior (ex: notificações)
+                    // Retornar os dados atualizados e o status anterior para uso posterior (ex: notificações)
                     return {
                         updated,
                         previousStatus: current.status,
@@ -162,7 +162,7 @@ export async function PATCH(
 
                 if (result.error === "ACTIVE_EXISTS") {
                     return NextResponse.json(
-                        { error: "Já existe uma sessão activa em curso" },
+                        { error: "Já existe uma sessão ativa em curso" },
                         { status: 409 },
                     );
                 }
@@ -170,7 +170,7 @@ export async function PATCH(
                 if (result.error === "INVALID_STATE") {
                     return NextResponse.json(
                         {
-                            error: `Acção '${action}' não permitida no estado '${result.currentStatus}'`,
+                            error: `Ação '${action}' não permitida no estado '${result.currentStatus}'`,
                         },
                         { status: 409 },
                     );

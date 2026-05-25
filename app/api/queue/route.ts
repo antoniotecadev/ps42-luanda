@@ -2,7 +2,7 @@
 
 /**
  * Endpoint que retorna o estado completo da fila com dados enriquecidos. 
- * Usado pelo frontend para mostrar posições, tempo de espera estimado e sessão activa.
+ * Usado pelo frontend para mostrar posições, tempo de espera estimado e sessão ativa.
  */
 
 import { NextResponse } from 'next/server'
@@ -13,7 +13,7 @@ export async function GET() {
     const session = await auth()
     if (!session?.user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
 
-    // Sessão activa
+    // Sessão ativa
     const activeSession = await prisma.session.findFirst({
         where: { status: 'ACTIVE' },
         include: {
@@ -37,9 +37,9 @@ export async function GET() {
 
     // Tempo estimado de espera (60 min por sessão)
 
-    // Se houver uma sessão activa, calcular o tempo restante com base no tempo decorrido desde o início da sessão, 
+    // Se houver uma sessão ativa, calcular o tempo restante com base no tempo decorrido desde o início da sessão, 
     // e adicionar 60 min para cada pessoa à frente na fila. 
-    // Se não houver sessão activa, o tempo estimado é simplesmente a posição na fila multiplicada por 60 min.
+    // Se não houver sessão ativa, o tempo estimado é simplesmente a posição na fila multiplicada por 60 min.
     const estimatedWait = activeSession
         ? (() => {
             if (!activeSession.startedAt) return myPosition * 60
@@ -50,7 +50,7 @@ export async function GET() {
         : myPosition * 60
 
     return NextResponse.json({
-        activeSession, // Detalhes da sessão activa, ou null se não houver
+        activeSession, // Detalhes da sessão ativa, ou null se não houver
         queue, // Lista completa da fila, incluindo sessões pendentes e aprovadas, para exibição no frontend
         myPosition: myPosition > 0 ? myPosition : null, // Se o usuário não estiver na fila, retorna null para a posição
         estimatedWaitMin: Math.round(estimatedWait), // Arredonda para o minuto mais próximo

@@ -37,6 +37,12 @@ interface QueueState {
     consoleStatus: 'free' | 'occupied' | 'queued'
 }
 
+const CONSOLE_STATUS_LABEL: Record<QueueState['consoleStatus'], string> = {
+    free: 'Livre',
+    occupied: 'Ocupada',
+    queued: 'Com fila',
+}
+
 export default function QueueLive({ userId }: { userId: string }) {
     const [state, setState] = useState<QueueState | null>(null)
     const [timer, setTimer] = useState(0)   // segundos restantes
@@ -124,15 +130,17 @@ export default function QueueLive({ userId }: { userId: string }) {
                 </div>
                 <div className="border border-[rgb(var(--border))] bg-surface p-3 rounded-sm">
                     <p className="font-mono text-[10px] text-[rgb(var(--muted-fg))] uppercase tracking-widest">Estado da consola</p>
-                    <p className="font-display text-2xl font-black capitalize">{state?.consoleStatus ?? 'free'}</p>
+                    <p className="font-display text-2xl font-black">
+                        {state ? CONSOLE_STATUS_LABEL[state.consoleStatus] : '--'}
+                    </p>
                 </div>
             </div>
 
-            {/* Sessão Activa */}
+            {/* Sessão Ativa */}
             {state?.activeSession ? (
                 <div className="border border-teal-500/30 bg-teal-500/5 p-6 rounded-sm">
                     <p className="font-mono text-[10px] text-teal-400 tracking-widest uppercase mb-2">
-                        Sessão Activa
+                        Sessão Ativa
                     </p>
                     <div className="flex items-center justify-between">
                         <div>

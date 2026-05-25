@@ -26,7 +26,7 @@ export default function RequisicaoForm({ games }: Props) {
                 router.push('/queue')
             } else {
                 const data = await res.json().catch(() => ({}))
-                setError(data.error || 'Erro ao submeter pedido')
+                setError(data.error || 'Não foi possível submeter o pedido. Tenta novamente.')
                 setLoading(false)
             }
         } catch {

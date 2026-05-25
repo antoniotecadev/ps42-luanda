@@ -47,7 +47,7 @@ describe('session-workflow queue/audit helpers', () => {
     expect(removesFromQueue('end')).toBe(false)
   })
 
-  it('gera action de auditoria por acção', () => {
+  it('gera action de auditoria por ação', () => {
     expect(getAuditAction('approve')).toBe('SESSION_APPROVED')
     expect(getAuditAction('start')).toBe('SESSION_STARTED')
     expect(getAuditAction('end')).toBe('SESSION_ENDED')
