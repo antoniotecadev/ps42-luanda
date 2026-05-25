@@ -191,7 +191,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         };
       }
 
-      // Se o token ainda não expirou, apenas retorna o token atual
+      // Se o token ainda não expirou, apenas retorna o token actual
       if (
         typeof authToken.expiresAt === "number" &&
         Date.now() < authToken.expiresAt
@@ -285,23 +285,25 @@ async function refreshAccessToken(token: AuthToken): Promise<AuthToken> {
     }
 
     if (!response.ok) {
+      const isInvalidGrant = refreshedTokens.error === "invalid_grant";
       const detail =
         refreshedTokens.error_description ??
         refreshedTokens.error ??
         responseText ??
         `HTTP ${response.status}`;
 
-      console.error(
-        `Erro ao renovar token da Intra (status ${response.status}): ${detail}`,
-      );
+      if (isInvalidGrant) {
+        console.warn("Sessão da Intra expirada. É necessário iniciar sessão novamente.");
+      } else {
+        console.error(
+          `Erro ao renovar token da Intra (status ${response.status}): ${detail}`,
+        );
+      }
 
       return {
         ...token,
         refreshToken: undefined,
-        error:
-          refreshedTokens.error === "invalid_grant"
-            ? "ReauthRequired"
-            : "RefreshAccessTokenError",
+        error: isInvalidGrant ? "ReauthRequired" : "RefreshAccessTokenError",
       };
     }
 
@@ -337,7 +339,7 @@ async function refreshAccessToken(token: AuthToken): Promise<AuthToken> {
  * | Callback   | Quando executa?                                      | Frequência                        |
  * |------------|------------------------------------------------------|-----------------------------------|
  * | signIn     | Apenas no momento do login.                          | Uma vez por login.                |
- * | jwt        | Quando o token é criado ou o cookie é lido/atualizado. | Frequentemente, mas com cache.  |
+ * | jwt        | Quando o token é criado ou o cookie é lido/actualizado. | Frequentemente, mas com cache.  |
  * | session    | Sempre que você chama useSession() ou auth().        | Sempre que a UI precisa de dados. |
  * | authorized | Em cada requisição de rota (Middleware).             | Constantemente (em cada clique).  |
  */

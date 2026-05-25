@@ -32,6 +32,12 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
                     </div>
                 )}
 
+                {status === 'reauth' && (
+                    <div className="mx-auto max-w-md rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+                        A tua sessão expirou. Por favor entra novamente com a conta Intra 42.
+                    </div>
+                )}
+
                 <form action={signInWith42}>
                     <button
                         type="submit"

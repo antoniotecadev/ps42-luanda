@@ -49,7 +49,7 @@ export default function SessionCard({ session }: SessionCardProps) {
                     Pedido feito às {new Date(session.requestedAt).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}
                 </p>
                 {session.queuePos ? (
-                    <p className="text-sm text-[rgb(var(--muted-fg))]">Posição atual na fila: <span className="text-teal-300 font-mono">#{session.queuePos}</span></p>
+                    <p className="text-sm text-[rgb(var(--muted-fg))]">Posição actual na fila: <span className="text-teal-300 font-mono">#{session.queuePos}</span></p>
                 ) : null}
                 {session.status === 'ACTIVE' && session.durationMin ? (
                     <p className="text-sm text-teal-400">Tempo da sessão: {session.durationMin} min</p>

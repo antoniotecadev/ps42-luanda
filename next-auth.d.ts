@@ -4,6 +4,7 @@ import { Role } from "@prisma/client";
 // Estende o User básico do NextAuth
 declare module "next-auth" {
   interface Session {
+    error?: string;
     user: {
       id: string;
       intraId: number;

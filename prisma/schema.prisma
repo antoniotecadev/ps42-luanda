@@ -13,7 +13,7 @@
 // npx prisma migrate deploy   → Aplica migrations em produção
 // npx prisma studio          → Abre interface visual de dados
 // npx prisma db push         → Sincroniza schema com BD (sem migrations)
-// npx prisma db pull         → Introspect BD e atualiza schema
+// npx prisma db pull         → Introspect BD e actualiza schema
 // npx prisma format          → Formata o arquivo schema.prisma
 // npx prisma validate        → Valida erros no schema
 // npx prisma db push --force-reset → Reseta BD e aplica schema (cuidado: apaga dados)
@@ -380,7 +380,7 @@ model AuditLog {
 }
 
 // Configurações do sistema, para armazenar chaves e valores flexíveis, como status de manutenção, mensagens globais, limites de sessões, etc., 
-// com relação opcional ao usuário que fez a última atualização para rastreabilidade administrativa
+// com relação opcional ao usuário que fez a última actualização para rastreabilidade administrativa
 model SystemConfig {
   id          String   @id @default(cuid())
   key         String   @unique

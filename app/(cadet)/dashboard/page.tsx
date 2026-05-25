@@ -70,7 +70,7 @@ export default async function CadeteDashboard() {
                         {canRequest ? 'Pedido disponível' : 'Pedido indisponível'}
                     </span>
                     <span className="inline-flex items-center border border-[rgb(var(--border))] px-3 py-1 font-mono text-[10px] uppercase tracking-wider text-[rgb(var(--muted-fg))]">
-                        Fila atual: {queueCount}
+                        Fila actual: {queueCount}
                     </span>
                 </div>
 

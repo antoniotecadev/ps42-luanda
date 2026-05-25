@@ -2,7 +2,7 @@
 
 /**
  * Painel do staff para aprovar, rejeitar, 
- * iniciar e terminar sessões. Com atualizações em tempo real via Pusher.
+ * iniciar e terminar sessões. Com actualizações em tempo real via Pusher.
  */
 
 'use client'

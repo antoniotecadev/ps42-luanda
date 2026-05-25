@@ -32,7 +32,7 @@ const REDIS_CACHE_ENABLED = Boolean(
 
 // checkEligibility() é a função principal que avalia a elegibilidade de um usuário com base nos critérios definidos no Artigo 3.º do Regulamento,
 // verificando o cache Redis para resultados anteriores, buscando dados necessários da API da 42 Intra e do banco de dados,
-// avaliando cada critério e atualizando o status de elegibilidade no banco de dados e cache Redis.
+// avaliando cada critério e actualizando o status de elegibilidade no banco de dados e cache Redis.
 export async function checkEligibility(
     userId: string,
     intraId: number,
@@ -181,7 +181,7 @@ export async function checkEligibility(
             label: "Situação académica regular",
             article: "Art. 3.º-f",
             passed: (() => {
-                // Ordena os projectos por data de atualização (updated_at) do mais recente para o mais antigo,
+                // Ordena os projectos por data de actualização (updated_at) do mais recente para o mais antigo,
                 // garantindo que a avaliação de atrasos e falhas seja feita com base nos projectos mais recentes,
                 // e considerando apenas os projectos finalizados para avaliar atrasos e falhas,
                 // retornando true se o número de projectos falhados for inferior a 3, ou false caso contrário,
@@ -261,7 +261,7 @@ export async function checkEligibility(
         }),
         // Cachear resultado no Redis com TTL, garantindo que os resultados de elegibilidade sejam armazenados em cache para acesso rápido,
         // e que o cache seja actualizado sempre que a função de verificação de elegibilidade for executada,
-        // com um tempo de expiração definido para garantir que os dados não fiquem desatualizados.
+        // com um tempo de expiração definido para garantir que os dados não fiquem desactualizados.
         REDIS_CACHE_ENABLED
             ? redis.set(cacheKey, result, { ex: CACHE_TTL }).catch(() => undefined)
             : Promise.resolve(undefined),

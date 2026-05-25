@@ -24,6 +24,7 @@ export const authConfig = {
             if (token && session.user) {
                 session.user.role = token.role as Role;
             }
+            session.error = token.error as string | undefined;
             return session;
         },
 
@@ -33,6 +34,7 @@ export const authConfig = {
             const isPublicRoute = ['/', '/login'].includes(nextUrl.pathname);
             const isApiAuthRoute = nextUrl.pathname.startsWith('/api/auth');
             const isStaffRoute = nextUrl.pathname.startsWith('/staff');
+            const authError = session?.error;
 
             // console.log('Middleware Session:', session);
             // console.log('Requested URL:', nextUrl.pathname) // Log para debug
@@ -50,6 +52,10 @@ export const authConfig = {
              */
 
             if (isApiAuthRoute || isPublicRoute) return true; // Permite acesso a rotas públicas e de autenticação da API sem restrições
+
+            if (authError === 'ReauthRequired') {
+                return Response.redirect(new URL('/login?status=reauth', nextUrl));
+            }
 
             if (!isLoggedIn) return false; // Redireciona para login automaticamente
 
@@ -85,7 +91,7 @@ export const authConfig = {
  * | Callback   | Quando executa?                                      | Frequência                        |
  * |------------|------------------------------------------------------|-----------------------------------|
  * | signIn     | Apenas no momento do login.                          | Uma vez por login.                |
- * | jwt        | Quando o token é criado ou o cookie é lido/atualizado. | Frequentemente, mas com cache.  |
+ * | jwt        | Quando o token é criado ou o cookie é lido/actualizado. | Frequentemente, mas com cache.  |
  * | session    | Sempre que você chama useSession() ou auth().        | Sempre que a UI precisa de dados. |
  * | authorized | Em cada requisição de rota (Middleware).             | Constantemente (em cada clique).  |
  */

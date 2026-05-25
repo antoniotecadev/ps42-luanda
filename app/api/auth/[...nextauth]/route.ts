@@ -13,7 +13,7 @@ export const { GET, POST } = handlers
 // e o NextAuth processa o código de autorização para obter o token de acesso 
 // e as informações do usuário, seguindo a configuração definida em lib/auth.ts.
 
-// GET / POST /api/auth/signin -> Quando o usuário clica no botão de login, ele é redirecionado para esta rota, que inicia o processo de autenticação com a 42 Intra, seguindo a configuração do NextAuth e os callbacks definidos em lib/auth.ts para criar ou atualizar o usuário na base de dados e estabelecer a sessão do usuário.
+// GET / POST /api/auth/signin -> Quando o usuário clica no botão de login, ele é redirecionado para esta rota, que inicia o processo de autenticação com a 42 Intra, seguindo a configuração do NextAuth e os callbacks definidos em lib/auth.ts para criar ou actualizar o usuário na base de dados e estabelecer a sessão do usuário.
 // POST /api/auth/signout -> Quando o usuário clica no botão de logout, ele é redirecionado para esta rota, que encerra a sessão do usuário e redireciona para a página inicial ou de login, conforme definido na configuração do NextAuth em lib/auth.config.ts.
 // GET /api/auth/session -> Retorna as informações da sessão do usuário, se estiver autenticado.
 // GET /api/auth/providers -> Retorna a lista de provedores de autenticação disponíveis.

@@ -164,7 +164,7 @@ export async function POST(request: NextRequest) {
         queueSize: txResult.queueSize,
     })
 
-    // 8. Atualizar fila para todos
+    // 8. Actualizar fila para todos
     await pusherServer.trigger(CHANNELS.QUEUE, EVENTS.QUEUE_UPDATED, {
         position: txResult.queueSize,
         userId: session.user.id,

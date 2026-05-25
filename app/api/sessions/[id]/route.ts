@@ -79,7 +79,7 @@ export async function PATCH(
                         return { error: "FORBIDDEN" as const };
                     }
 
-                    // Verificar se a ação é permitida no estado atual da sessão
+                    // Verificar se a ação é permitida no estado actual da sessão
                     if (!canApplyAction(current.status, action)) {
                         return {
                             error: "INVALID_STATE" as const,
@@ -99,14 +99,14 @@ export async function PATCH(
                         }
                     }
 
-                    // Gerar os dados de atualização com base na ação e se o actor é staff ou não
+                    // Gerar os dados de actualização com base na ação e se o actor é staff ou não
                     const updateData = getUpdateData(
                         action as SessionAction,
                         isStaff,
                         note,
                     );
 
-                    // Atualizar a sessão com os novos dados
+                    // Actualizar a sessão com os novos dados
                     const updated = await tx.session.update({
                         where: { id },
                         data: updateData,
@@ -117,7 +117,7 @@ export async function PATCH(
                         await reindexQueuePositions(tx);
                     }
 
-                    // Criar um registo de auditoria para esta ação, incluindo os dados antes e depois da atualização
+                    // Criar um registo de auditoria para esta ação, incluindo os dados antes e depois da actualização
                     await tx.auditLog.create({
                         data: {
                             actorId: session.user.id,
@@ -135,7 +135,7 @@ export async function PATCH(
                         },
                     });
 
-                    // Retornar os dados atualizados e o status anterior para uso posterior (ex: notificações)
+                    // Retornar os dados actualizados e o status anterior para uso posterior (ex: notificações)
                     return {
                         updated,
                         previousStatus: current.status,
